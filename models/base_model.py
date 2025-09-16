@@ -7,8 +7,14 @@ import time
 import json
 import torch
 import psutil
-import GPUtil
 from abc import ABC, abstractmethod
+
+# Optional GPU utilities
+try:
+    import GPUtil
+    HAS_GPUTIL = True
+except ImportError:
+    HAS_GPUTIL = False
 from typing import Dict, List, Any, Optional, Tuple
 from dataclasses import dataclass
 from transformers import AutoTokenizer, AutoModelForCausalLM
@@ -84,15 +90,21 @@ class BaseModelImplementation(ABC):
     def get_memory_usage(self) -> Dict[str, float]:
         """Get current memory usage"""
         gpu_memory = 0
+        gpu_utilization = 0
+        
         if torch.cuda.is_available():
             gpu_memory = torch.cuda.memory_allocated() / 1e9
+            try:
+                gpu_utilization = torch.cuda.utilization() if torch.cuda.is_available() else 0
+            except:
+                gpu_utilization = 0
         
         cpu_memory = psutil.virtual_memory().used / 1e9
         
         return {
             "gpu_memory_gb": gpu_memory,
             "cpu_memory_gb": cpu_memory,
-            "gpu_utilization": torch.cuda.utilization() if torch.cuda.is_available() else 0
+            "gpu_utilization": gpu_utilization
         }
     
     def benchmark_performance(self, test_prompts: List[str], **kwargs) -> ModelPerformanceMetrics:

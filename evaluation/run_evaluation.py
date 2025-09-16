@@ -17,7 +17,7 @@ from datetime import datetime
 # Add project root to path
 sys.path.append(str(Path(__file__).parent.parent))
 
-from configs.model_configs import MODEL_CONFIGS, get_high_priority_models, get_agent_optimized_models
+from configs.model_configs import MODEL_CONFIGS, get_high_priority_models, get_agent_optimized_models, ModelConfig, estimate_memory_usage
 from models.qwen_implementation import create_qwen3_8b, create_qwen3_14b
 from models.base_model import BaseModelImplementation, ModelPerformanceMetrics, AgentEvaluationResult
 
@@ -125,20 +125,26 @@ class LLMEvaluationRunner:
             ]
         }
     
-    def run_individual_evaluation(self, model_name: str, model_config: Dict) -> Dict[str, Any]:
-        """Run complete evaluation for a single model"""
-        logger.info(f"🚀 Starting evaluation for {model_name}")
+    def run_individual_evaluation(self, model_name: str, model_config: ModelConfig, preset: str = "balanced") -> Dict[str, Any]:
+        """Run complete evaluation with enhanced configuration support"""
+        logger.info(f"🚀 Starting evaluation for {model_name} with preset: {preset}")
         
         results = {
             "model_name": model_name,
-            "config": model_config,
+            "preset": preset,
+            "config": {
+                "model_config": vars(model_config),
+                "vllm_args": model_config.to_vllm_args(),
+                "sampling_params": model_config.get_agent_sampling_params(),
+                "preset": preset
+            },
             "timestamp": datetime.now().isoformat(),
             "status": "running"
         }
         
         try:
-            # Create model instance
-            model = self._create_model_instance(model_name, model_config)
+            # Create model instance with specific preset
+            model = self._create_model_instance(model_name, model_config, preset)
             if not model:
                 results["status"] = "failed"
                 results["error"] = "Failed to create model instance"
@@ -171,13 +177,13 @@ class LLMEvaluationRunner:
                 results["function_calling_test"] = function_results
             
             # Save individual results
-            self._save_individual_results(model_name, results)
+            self._save_individual_results(model_name, results, preset)
             
             # Cleanup
             model.unload_model()
             
             results["status"] = "completed"
-            logger.info(f"✅ Evaluation completed for {model_name}")
+            logger.info(f"✅ Evaluation completed for {model_name} with preset: {preset}")
             
         except Exception as e:
             logger.error(f"❌ Evaluation failed for {model_name}: {e}")
@@ -193,20 +199,26 @@ class LLMEvaluationRunner:
         
         return results
     
-    def _create_model_instance(self, model_name: str, config: Dict) -> Optional[BaseModelImplementation]:
-        """Create appropriate model instance based on model name"""
+    def _create_model_instance(self, model_name: str, model_config: ModelConfig, preset: str = "balanced") -> Optional[BaseModelImplementation]:
+        """Create model instance with enhanced configuration and preset support"""
         try:
-            if "qwen3_8b" in model_name.lower() or "qwen" in model_name.lower() and "8b" in model_name.lower():
-                return create_qwen3_8b(self.cache_dir)
-            elif "qwen3_14b" in model_name.lower() or "qwen" in model_name.lower() and "14b" in model_name.lower():
-                return create_qwen3_14b(self.cache_dir)
+            logger.info(f"Creating {model_name} instance with preset: {preset}")
+            
+            if "qwen" in model_name.lower():
+                if "8b" in model_name.lower():
+                    return create_qwen3_8b(preset=preset, cache_dir=self.cache_dir)
+                elif "14b" in model_name.lower():
+                    return create_qwen3_14b(preset=preset, cache_dir=self.cache_dir)
+                else:
+                    logger.warning(f"Unknown Qwen variant: {model_name}")
+                    return None
             else:
                 # For other models, we'd need to implement their specific loaders
                 logger.warning(f"No specific implementation for {model_name}, skipping")
                 return None
                 
         except Exception as e:
-            logger.error(f"Failed to create model instance for {model_name}: {e}")
+            logger.error(f"Failed to create model instance for {model_name} with preset {preset}: {e}")
             return None
     
     def _run_performance_benchmark(self, model: BaseModelImplementation) -> Optional[ModelPerformanceMetrics]:
@@ -225,10 +237,29 @@ class LLMEvaluationRunner:
             logger.error(f"Performance benchmark failed: {e}")
             return None
     
-    def _save_individual_results(self, model_name: str, results: Dict):
-        """Save individual model results"""
-        # Clean model name for filename
-        safe_name = model_name.replace(" ", "_").replace("/", "_").lower()
+    def _save_individual_results(self, model_name: str, results: Dict, preset: str = "balanced"):
+        """Save individual model results with preset information"""
+        # Clean model name and include preset for filename clarity
+        safe_name = f"{model_name}_{preset}".replace(" ", "_").replace("/", "_").lower()
+        
+        # Add configuration analysis to results
+        if "config" in results and "model_config" in results["config"]:
+            config_dict = results["config"]["model_config"]
+            # Reconstruct ModelConfig for analysis
+            temp_config = ModelConfig(**{k: v for k, v in config_dict.items() if k in ModelConfig.__dataclass_fields__})
+            memory_est = estimate_memory_usage(temp_config)
+            
+            results["configuration_analysis"] = {
+                "preset": preset,
+                "memory_estimation": memory_est,
+                "optimization_features": {
+                    "prefix_caching": config_dict.get("enable_prefix_caching", False),
+                    "v2_block_manager": config_dict.get("use_v2_block_manager", False),
+                    "quantization": config_dict.get("quantization_method", "none"),
+                    "max_num_seqs": config_dict.get("max_num_seqs", 64),
+                    "gpu_memory_utilization": config_dict.get("gpu_memory_utilization", 0.85)
+                }
+            }
         
         # Save detailed results
         results_file = self.output_dir / "performance" / f"{safe_name}_results.json"
@@ -236,6 +267,11 @@ class LLMEvaluationRunner:
             json.dump(results, f, indent=2, default=str)
         
         logger.info(f"Results saved to {results_file}")
+    
+    def _save_individual_results_legacy(self, model_name: str, results: Dict):
+        """Legacy method for backward compatibility - extracts preset from results"""
+        preset = results.get("preset", "balanced")
+        self._save_individual_results(model_name, results, preset)
     
     def run_comparison_analysis(self):
         """Run comparative analysis across all evaluated models"""
@@ -384,9 +420,9 @@ class LLMEvaluationRunner:
         
         logger.info(f"Summary report saved to {report_file}")
     
-    def run_full_evaluation(self, models_to_test: Optional[List[str]] = None):
-        """Run complete evaluation suite"""
-        logger.info("🚀 Starting full LLM evaluation suite")
+    def run_full_evaluation(self, models_to_test: Optional[List[str]] = None, preset: str = "balanced"):
+        """Run complete evaluation suite with enhanced configuration support"""
+        logger.info(f"🚀 Starting full LLM evaluation suite with preset: {preset}")
         
         # Determine which models to test
         if models_to_test:
@@ -395,16 +431,26 @@ class LLMEvaluationRunner:
             # Default: test high priority models
             configs_to_test = get_high_priority_models()
         
-        logger.info(f"Will evaluate {len(configs_to_test)} models: {list(configs_to_test.keys())}")
+        logger.info(f"Will evaluate {len(configs_to_test)} models with {preset} preset: {list(configs_to_test.keys())}")
+        
+        # Apply preset to configurations
+        enhanced_configs = {}
+        for name, base_config in configs_to_test.items():
+            if preset != "balanced":
+                enhanced_configs[name] = base_config.create_preset_variant(preset)
+            else:
+                enhanced_configs[name] = base_config
         
         # Run individual evaluations
-        for model_name, config in configs_to_test.items():
+        for model_name, model_config in enhanced_configs.items():
             logger.info(f"\n{'='*60}")
-            logger.info(f"Evaluating: {model_name}")
+            logger.info(f"Evaluating: {model_name} (preset: {preset})")
             logger.info(f"{'='*60}")
             
-            result = self.run_individual_evaluation(model_name, vars(config))
-            self.evaluation_results[model_name] = result
+            result = self.run_individual_evaluation(model_name, model_config, preset)
+            # Use preset-aware key for results
+            result_key = f"{model_name}_{preset}" if preset != "balanced" else model_name
+            self.evaluation_results[result_key] = result
             
             # Brief pause between models to allow cleanup
             time.sleep(5)
@@ -414,6 +460,224 @@ class LLMEvaluationRunner:
         
         logger.info("🎉 Full evaluation completed!")
         return self.evaluation_results
+    
+    def run_preset_comparison(self, model_name: str, model_config: ModelConfig) -> Dict[str, Any]:
+        """Compare different presets for a single model"""
+        logger.info(f"🔍 Running preset comparison for {model_name}")
+        
+        presets = ["balanced", "performance", "memory_optimized"]
+        comparison_results = {
+            "model_name": model_name,
+            "timestamp": datetime.now().isoformat(),
+            "preset_results": {}
+        }
+        
+        for preset in presets:
+            logger.info(f"Testing {model_name} with {preset} preset...")
+            
+            try:
+                # Create preset variant
+                if preset != "balanced":
+                    preset_config = model_config.create_preset_variant(preset)
+                else:
+                    preset_config = model_config
+                
+                # Create model instance with specific preset
+                model = self._create_model_instance(model_name, preset_config, preset)
+                if not model:
+                    comparison_results["preset_results"][preset] = {
+                        "status": "failed",
+                        "error": "Failed to create model instance"
+                    }
+                    continue
+                
+                # Run lightweight evaluation (no full model loading)
+                preset_result = self._run_preset_evaluation(model, preset, preset_config)
+                comparison_results["preset_results"][preset] = preset_result
+                
+                # Cleanup
+                model.unload_model()
+                time.sleep(2)  # Brief pause between presets
+                
+            except Exception as e:
+                logger.warning(f"Preset {preset} failed for {model_name}: {e}")
+                comparison_results["preset_results"][preset] = {
+                    "status": "failed",
+                    "error": str(e)
+                }
+        
+        # Save comparison results
+        self._save_preset_comparison(model_name, comparison_results)
+        
+        return comparison_results
+    
+    def _run_preset_evaluation(self, model: BaseModelImplementation, preset: str, config: ModelConfig) -> Dict[str, Any]:
+        """Run lightweight evaluation for preset comparison (without model loading)"""
+        try:
+            # Get configuration analysis
+            memory_est = estimate_memory_usage(config)
+            vllm_args = config.to_vllm_args()
+            sampling_params = config.get_agent_sampling_params()
+            
+            # Get model info
+            model_info = model.get_model_info()
+            
+            result = {
+                "status": "completed",
+                "preset": preset,
+                "configuration": {
+                    "gpu_memory_utilization": config.gpu_memory_utilization,
+                    "max_num_seqs": config.max_num_seqs,
+                    "max_model_len": config.max_model_len,
+                    "enable_prefix_caching": config.enable_prefix_caching,
+                    "use_v2_block_manager": config.use_v2_block_manager,
+                    "evaluation_batch_size": config.evaluation_batch_size,
+                    "quantization_method": config.quantization_method
+                },
+                "memory_estimation": memory_est,
+                "sampling_parameters": sampling_params,
+                "model_info": model_info,
+                "optimization_score": self._calculate_optimization_score(config, memory_est)
+            }
+            
+            return result
+            
+        except Exception as e:
+            return {
+                "status": "failed",
+                "preset": preset,
+                "error": str(e)
+            }
+    
+    def _calculate_optimization_score(self, config: ModelConfig, memory_est: Dict) -> Dict[str, float]:
+        """Calculate optimization scores for different aspects"""
+        # Performance score (higher is better)
+        perf_score = (
+            config.gpu_memory_utilization * 0.3 +  # Memory utilization
+            (config.max_num_seqs / 128) * 0.3 +     # Batch efficiency
+            (1.0 if config.enable_prefix_caching else 0.0) * 0.2 +  # Caching
+            (1.0 if config.use_v2_block_manager else 0.0) * 0.2     # Block manager
+        )
+        
+        # Memory efficiency score (lower memory usage is better, but normalized)
+        memory_efficiency = max(0, 1.0 - (memory_est["h100_utilization"] / 0.5))  # Target <50% for efficiency
+        
+        # Agent suitability score
+        agent_score = (
+            (1.0 if config.agent_optimized else 0.0) * 0.4 +
+            (min(config.max_function_calls_per_turn / 5, 1.0)) * 0.3 +
+            (1.0 - config.agent_temperature) * 0.3  # Lower temp better for agents
+        )
+        
+        return {
+            "performance_score": round(perf_score, 3),
+            "memory_efficiency": round(memory_efficiency, 3),
+            "agent_suitability": round(agent_score, 3),
+            "overall_score": round((perf_score + memory_efficiency + agent_score) / 3, 3)
+        }
+    
+    def _save_preset_comparison(self, model_name: str, comparison_results: Dict):
+        """Save preset comparison results"""
+        safe_name = model_name.replace(" ", "_").replace("/", "_").lower()
+        comparison_file = self.output_dir / "comparisons" / f"{safe_name}_preset_comparison.json"
+        
+        with open(comparison_file, "w") as f:
+            json.dump(comparison_results, f, indent=2, default=str)
+        
+        logger.info(f"Preset comparison saved to {comparison_file}")
+        
+        # Also create a summary report
+        self._create_preset_comparison_report(model_name, comparison_results)
+    
+    def _create_preset_comparison_report(self, model_name: str, comparison_results: Dict):
+        """Create human-readable preset comparison report"""
+        safe_name = model_name.replace(" ", "_").replace("/", "_").lower()
+        report_file = self.output_dir / "reports" / f"{safe_name}_preset_comparison.md"
+        
+        report_lines = [
+            f"# Preset Comparison Report: {model_name}",
+            f"Generated: {comparison_results['timestamp']}",
+            "",
+            "## Configuration Comparison",
+            "",
+            "| Preset | GPU Mem | Max Seqs | Est VRAM | H100 % | Batch | Caching |",
+            "|--------|---------|----------|----------|---------|-------|---------|"
+        ]
+        
+        preset_order = ["balanced", "performance", "memory_optimized"]
+        best_scores = {"performance": 0, "memory": 1, "agent": 0, "overall": 0}
+        best_presets = {"performance": "", "memory": "", "agent": "", "overall": ""}
+        
+        for preset in preset_order:
+            if preset in comparison_results["preset_results"]:
+                result = comparison_results["preset_results"][preset]
+                if result["status"] == "completed":
+                    config = result["configuration"]
+                    memory = result["memory_estimation"]
+                    scores = result["optimization_score"]
+                    
+                    # Track best scores
+                    if scores["performance_score"] > best_scores["performance"]:
+                        best_scores["performance"] = scores["performance_score"]
+                        best_presets["performance"] = preset
+                    if scores["memory_efficiency"] > best_scores["memory"]:
+                        best_scores["memory"] = scores["memory_efficiency"]
+                        best_presets["memory"] = preset
+                    if scores["agent_suitability"] > best_scores["agent"]:
+                        best_scores["agent"] = scores["agent_suitability"]
+                        best_presets["agent"] = preset
+                    if scores["overall_score"] > best_scores["overall"]:
+                        best_scores["overall"] = scores["overall_score"]
+                        best_presets["overall"] = preset
+                    
+                    report_lines.append(
+                        f"| {preset} | {config['gpu_memory_utilization']:.2f} | "
+                        f"{config['max_num_seqs']} | {memory['total_estimated_gb']:.1f}GB | "
+                        f"{memory['h100_utilization']:.1%} | {config['evaluation_batch_size']} | "
+                        f"{'Yes' if config['enable_prefix_caching'] else 'No'} |"
+                    )
+        
+        # Add optimization scores section
+        report_lines.extend([
+            "",
+            "## Optimization Scores",
+            "",
+            "| Preset | Performance | Memory Efficiency | Agent Suitability | Overall |",
+            "|--------|-------------|-------------------|-------------------|---------|"
+        ])
+        
+        for preset in preset_order:
+            if preset in comparison_results["preset_results"]:
+                result = comparison_results["preset_results"][preset]
+                if result["status"] == "completed":
+                    scores = result["optimization_score"]
+                    report_lines.append(
+                        f"| {preset} | {scores['performance_score']:.3f} | "
+                        f"{scores['memory_efficiency']:.3f} | {scores['agent_suitability']:.3f} | "
+                        f"{scores['overall_score']:.3f} |"
+                    )
+        
+        # Add recommendations
+        report_lines.extend([
+            "",
+            "## Recommendations",
+            "",
+            f"**Best for Performance**: {best_presets['performance']} (score: {best_scores['performance']:.3f})",
+            f"**Best for Memory Efficiency**: {best_presets['memory']} (score: {best_scores['memory']:.3f})",
+            f"**Best for Agent Tasks**: {best_presets['agent']} (score: {best_scores['agent']:.3f})",
+            f"**Best Overall**: {best_presets['overall']} (score: {best_scores['overall']:.3f})",
+            "",
+            "## Usage Recommendations",
+            "",
+            "- **Performance Preset**: Use for maximum throughput when memory is abundant",
+            "- **Memory Optimized Preset**: Use when running multiple models or limited VRAM",
+            "- **Balanced Preset**: Good general-purpose choice for most scenarios",
+        ])
+        
+        with open(report_file, "w") as f:
+            f.write("\\n".join(report_lines))
+        
+        logger.info(f"Preset comparison report saved to {report_file}")
 
 def main():
     parser = argparse.ArgumentParser(description="Run LLM evaluation suite")
@@ -423,24 +687,56 @@ def main():
     parser.add_argument("--priority-only", action="store_true", help="Test only high priority models")
     parser.add_argument("--quick-test", action="store_true", help="Run quick test only")
     
+    # NEW: Enhanced configuration arguments
+    parser.add_argument("--preset", default="balanced", 
+                       choices=["balanced", "performance", "memory_optimized"],
+                       help="Configuration preset to use (default: balanced)")
+    parser.add_argument("--compare-presets", action="store_true",
+                       help="Compare all presets for selected models")
+    parser.add_argument("--memory-budget", type=int, default=80,
+                       help="Available GPU memory in GB (default: 80 for H100)")
+    
     args = parser.parse_args()
     
     # Create runner
     runner = LLMEvaluationRunner(args.output_dir, args.cache_dir)
     
-    if args.quick_test:
-        # Quick test with just one model
-        logger.info("Running quick test with Qwen-3 8B")
-        runner.run_individual_evaluation("qwen3_8b", vars(MODEL_CONFIGS["qwen3_8b"]))
+    if args.compare_presets:
+        # Run preset comparison mode
+        logger.info(f"🔍 Running preset comparison mode")
+        models_to_compare = args.models if args.models else ["qwen3_8b"]
+        
+        for model_name in models_to_compare:
+            if model_name in MODEL_CONFIGS:
+                model_config = MODEL_CONFIGS[model_name]
+                logger.info(f"\\nComparing presets for {model_name}...")
+                comparison_result = runner.run_preset_comparison(model_name, model_config)
+                
+                # Print quick summary
+                print(f"\\n📊 Quick Summary for {model_name}:")
+                for preset, result in comparison_result["preset_results"].items():
+                    if result["status"] == "completed":
+                        scores = result["optimization_score"]
+                        print(f"  {preset}: Overall Score {scores['overall_score']:.3f}")
+            else:
+                logger.warning(f"Model {model_name} not found in configurations")
+                
+    elif args.quick_test:
+        # Quick test with specified preset
+        logger.info(f"Running quick test with Qwen-3 8B using {args.preset} preset")
+        qwen_config = MODEL_CONFIGS["qwen3_8b"]
+        if args.preset != "balanced":
+            qwen_config = qwen_config.create_preset_variant(args.preset)
+        runner.run_individual_evaluation("qwen3_8b", qwen_config, args.preset)
     else:
-        # Full evaluation
+        # Full evaluation with preset
         models_to_test = None
         if args.models:
             models_to_test = args.models
         elif args.priority_only:
             models_to_test = list(get_high_priority_models().keys())
         
-        runner.run_full_evaluation(models_to_test)
+        runner.run_full_evaluation(models_to_test, args.preset)
 
 if __name__ == "__main__":
     main()

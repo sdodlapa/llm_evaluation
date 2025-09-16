@@ -10,62 +10,69 @@ import logging
 from typing import Dict, Any, Optional
 
 from .base_model import BaseModelImplementation
+from configs.model_configs import ModelConfig
 
 logger = logging.getLogger(__name__)
 
 class Qwen3Implementation(BaseModelImplementation):
-    """Qwen-3 model implementation with vLLM backend"""
+    """Qwen-3 model implementation with enhanced configuration support"""
     
-    def __init__(self, config: Dict[str, Any]):
-        super().__init__(config)
+    def __init__(self, config: ModelConfig):
+        # Convert ModelConfig to dict for base class compatibility
+        config_dict = {
+            "model_name": config.model_name,
+            "huggingface_id": config.huggingface_id,
+            "license": config.license,
+            "size_gb": config.size_gb,
+            "context_window": config.context_window,
+            "preset": config.preset,
+            "agent_optimized": config.agent_optimized,
+            "max_model_len": config.max_model_len,
+            "gpu_memory_utilization": config.gpu_memory_utilization,
+        }
+        super().__init__(config_dict)
+        
+        # Store the enhanced ModelConfig
+        self.model_config = config
         self.sampling_params = None
     
     def load_model(self) -> bool:
-        """Load Qwen-3 model with optimal settings for H100"""
+        """Load Qwen-3 model with enhanced configuration system"""
         try:
-            logger.info(f"Loading {self.model_name} with vLLM...")
+            logger.info(f"Loading {self.model_name} with preset: {self.model_config.preset}")
             
-            # Get vLLM arguments from config
-            vllm_args = self.config.get("vllm_args", {})
+            # Get optimized vLLM arguments from enhanced config
+            vllm_args = self.model_config.to_vllm_args()
             
-            # Default vLLM settings optimized for Qwen-3
-            default_args = {
-                "model": self.config["huggingface_id"],
-                "trust_remote_code": True,
-                "dtype": "auto",
-                "max_model_len": self.config.get("max_model_len", 32768),
-                "gpu_memory_utilization": self.config.get("gpu_memory_utilization", 0.85),
-                "quantization": self.config.get("quantization_method") if self.config.get("quantization_method") != "none" else None,
-                "tensor_parallel_size": 1,  # Single H100
-                "enforce_eager": False,  # Use CUDA graphs for speed
-                "disable_log_stats": True,  # Reduce logging overhead
-                "max_num_seqs": 64,  # Reasonable batch size for agents
-            }
+            logger.info(f"vLLM Configuration:")
+            logger.info(f"  Model: {vllm_args['model']}")
+            logger.info(f"  Max Length: {vllm_args['max_model_len']}")
+            logger.info(f"  GPU Memory: {vllm_args['gpu_memory_utilization']}")
+            logger.info(f"  Max Sequences: {vllm_args['max_num_seqs']}")
+            logger.info(f"  Prefix Caching: {vllm_args['enable_prefix_caching']}")
+            logger.info(f"  Quantization: {vllm_args.get('quantization', 'None')}")
             
-            # Merge with provided args
-            final_args = {**default_args, **vllm_args}
-            
-            # Load the model
-            self.llm_engine = LLM(**final_args)
+            # Load the model with enhanced configuration
+            self.llm_engine = LLM(**vllm_args)
             
             # Load tokenizer separately for token counting
             self.tokenizer = AutoTokenizer.from_pretrained(
-                self.config["huggingface_id"],
+                self.model_config.huggingface_id,
                 trust_remote_code=True
             )
             
-            # Set up sampling parameters optimized for agents
-            self.sampling_params = SamplingParams(
-                temperature=0.1,  # Low temperature for consistent agent behavior
-                top_p=0.9,
-                max_tokens=2048,  # Reasonable for agent responses
-                frequency_penalty=0.1,  # Slight penalty to avoid repetition
-                presence_penalty=0.1,
-                stop=["<|endoftext|>", "<|im_end|>", "\n\nUser:", "\n\nHuman:"],  # Qwen-specific stops
-            )
+            # Get optimized sampling parameters from config
+            sampling_config = self.model_config.get_agent_sampling_params()
+            self.sampling_params = SamplingParams(**sampling_config)
+            
+            logger.info(f"Sampling Configuration:")
+            logger.info(f"  Temperature: {self.sampling_params.temperature}")
+            logger.info(f"  Top-p: {self.sampling_params.top_p}")
+            logger.info(f"  Max Tokens: {self.sampling_params.max_tokens}")
+            logger.info(f"  Stop Tokens: {len(self.sampling_params.stop)} configured")
             
             self.is_loaded = True
-            logger.info(f"✅ {self.model_name} loaded successfully")
+            logger.info(f"✅ {self.model_name} loaded successfully with {self.model_config.preset} preset")
             
             # Log memory usage
             memory_info = self.get_memory_usage()
@@ -75,6 +82,7 @@ class Qwen3Implementation(BaseModelImplementation):
             
         except Exception as e:
             logger.error(f"❌ Failed to load {self.model_name}: {e}")
+            logger.error(f"Configuration used: {self.model_config.preset} preset")
             return False
     
     def generate_response(self, prompt: str, **kwargs) -> str:
@@ -265,59 +273,123 @@ If you don't need to use a function, respond normally with helpful information."
         }
     
     def get_model_info(self) -> Dict[str, Any]:
-        """Get detailed model information"""
+        """Get detailed model information including enhanced configuration"""
         info = {
             "model_name": self.model_name,
-            "huggingface_id": self.config["huggingface_id"],
-            "license": self.config.get("license", "Unknown"),
-            "context_window": self.config.get("context_window", 0),
-            "quantization": self.config.get("quantization_method", "none"),
-            "max_model_len": self.config.get("max_model_len", 0),
+            "huggingface_id": self.model_config.huggingface_id,
+            "license": self.model_config.license,
+            "size_gb": self.model_config.size_gb,
+            "context_window": self.model_config.context_window,
+            "preset": self.model_config.preset,
+            "quantization": self.model_config.quantization_method,
+            "max_model_len": self.model_config.max_model_len,
+            "agent_optimized": self.model_config.agent_optimized,
+            "agent_temperature": self.model_config.agent_temperature,
+            "max_function_calls": self.model_config.max_function_calls_per_turn,
             "is_loaded": self.is_loaded,
-            "agent_optimized": self.config.get("agent_optimized", False)
         }
         
         if self.is_loaded:
             memory_info = self.get_memory_usage()
             info.update(memory_info)
+            
+            # Add configuration-specific runtime info
+            info.update({
+                "gpu_memory_utilization": self.model_config.gpu_memory_utilization,
+                "max_num_seqs": self.model_config.max_num_seqs,
+                "enable_prefix_caching": self.model_config.enable_prefix_caching,
+                "use_v2_block_manager": self.model_config.use_v2_block_manager,
+            })
         
         return info
+    
+    def get_preset_comparison(self) -> Dict[str, Dict[str, Any]]:
+        """Compare this model across different presets"""
+        from configs.model_configs import estimate_memory_usage
+        
+        presets = ["balanced", "performance", "memory_optimized"]
+        comparison = {}
+        
+        for preset in presets:
+            if preset == self.model_config.preset:
+                # Current configuration
+                config = self.model_config
+            else:
+                # Create variant
+                config = self.model_config.create_preset_variant(preset)
+            
+            memory_est = estimate_memory_usage(config)
+            vllm_args = config.to_vllm_args()
+            
+            comparison[preset] = {
+                "gpu_memory_utilization": config.gpu_memory_utilization,
+                "max_num_seqs": config.max_num_seqs,
+                "estimated_vram_gb": memory_est["total_estimated_gb"],
+                "h100_utilization": memory_est["h100_utilization"],
+                "evaluation_batch_size": config.evaluation_batch_size,
+                "max_model_len": config.max_model_len,
+                "enable_prefix_caching": config.enable_prefix_caching,
+                "current": preset == self.model_config.preset
+            }
+        
+        return comparison
 
-# Factory function for easy instantiation
-def create_qwen3_8b(cache_dir: Optional[str] = None) -> Qwen3Implementation:
-    """Create Qwen-3 8B instance with default config"""
-    config = {
-        "model_name": "Qwen-3 8B Instruct",
-        "huggingface_id": "Qwen/Qwen2.5-7B-Instruct",
-        "license": "Apache 2.0",
-        "size_gb": 7.5,
-        "context_window": 128000,
-        "quantization_method": "awq",
-        "max_model_len": 32768,
-        "gpu_memory_utilization": 0.85,
-        "agent_optimized": True
-    }
+# Enhanced factory functions using ModelConfig
+def create_qwen3_8b(preset: str = "balanced", cache_dir: Optional[str] = None) -> Qwen3Implementation:
+    """Create Qwen-3 8B instance with specified preset"""
+    from configs.model_configs import MODEL_CONFIGS
+    
+    base_config = MODEL_CONFIGS["qwen3_8b"]
+    if preset != "balanced":
+        config = base_config.create_preset_variant(preset)
+    else:
+        config = base_config
     
     if cache_dir:
-        config["cache_dir"] = cache_dir
+        # Add cache directory to vLLM overrides
+        config._vllm_overrides["download_dir"] = cache_dir
     
     return Qwen3Implementation(config)
 
-def create_qwen3_14b(cache_dir: Optional[str] = None) -> Qwen3Implementation:
-    """Create Qwen-3 14B instance with default config"""
-    config = {
-        "model_name": "Qwen-3 14B Instruct",
-        "huggingface_id": "Qwen/Qwen2.5-14B-Instruct",
-        "license": "Apache 2.0", 
-        "size_gb": 14.0,
-        "context_window": 128000,
-        "quantization_method": "awq",
-        "max_model_len": 24576,  # Reduced for 14B model
-        "gpu_memory_utilization": 0.80,
-        "agent_optimized": True
-    }
+def create_qwen3_14b(preset: str = "balanced", cache_dir: Optional[str] = None) -> Qwen3Implementation:
+    """Create Qwen-3 14B instance with specified preset"""
+    from configs.model_configs import MODEL_CONFIGS
+    
+    base_config = MODEL_CONFIGS["qwen3_14b"]
+    if preset != "balanced":
+        config = base_config.create_preset_variant(preset)
+    else:
+        config = base_config
     
     if cache_dir:
-        config["cache_dir"] = cache_dir
+        # Add cache directory to vLLM overrides
+        config._vllm_overrides["download_dir"] = cache_dir
     
     return Qwen3Implementation(config)
+
+def create_qwen3_from_config(config: ModelConfig) -> Qwen3Implementation:
+    """Create Qwen-3 instance from custom ModelConfig"""
+    return Qwen3Implementation(config)
+
+def create_recommended_qwen(task_type: str = "agent_development", 
+                          available_memory_gb: int = 80,
+                          cache_dir: Optional[str] = None) -> Optional[Qwen3Implementation]:
+    """Create recommended Qwen configuration based on task and constraints"""
+    from configs.model_configs import recommend_config_for_task
+    
+    # Get recommendation from enhanced config system
+    recommended_config = recommend_config_for_task(task_type, available_memory_gb)
+    
+    if not recommended_config:
+        logger.warning(f"No suitable Qwen configuration found for task: {task_type}, memory: {available_memory_gb}GB")
+        return None
+    
+    if "qwen" not in recommended_config.huggingface_id.lower():
+        logger.warning(f"Recommended config is not Qwen model: {recommended_config.model_name}")
+        return None
+    
+    if cache_dir:
+        recommended_config._vllm_overrides["download_dir"] = cache_dir
+    
+    logger.info(f"Creating recommended Qwen for {task_type}: {recommended_config.model_name} ({recommended_config.preset})")
+    return Qwen3Implementation(recommended_config)
