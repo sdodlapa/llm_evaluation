@@ -20,6 +20,13 @@ sys.path.append(str(Path(__file__).parent.parent))
 from configs.model_configs import MODEL_CONFIGS, get_high_priority_models, get_agent_optimized_models, ModelConfig, estimate_memory_usage
 from models.qwen_implementation import create_qwen3_8b, create_qwen3_14b
 from models.base_model import BaseModelImplementation, ModelPerformanceMetrics, AgentEvaluationResult
+try:
+    from .dataset_manager import EvaluationDatasetManager
+    from .metrics import EvaluationMetrics, evaluate_dataset_predictions, print_evaluation_summary
+except ImportError:
+    # When running as script, use absolute imports
+    from dataset_manager import EvaluationDatasetManager
+    from metrics import EvaluationMetrics, evaluate_dataset_predictions, print_evaluation_summary
 
 logging.basicConfig(
     level=logging.INFO,
@@ -34,7 +41,8 @@ logger = logging.getLogger(__name__)
 class LLMEvaluationRunner:
     """Main class for running comprehensive LLM evaluations"""
     
-    def __init__(self, output_dir: str = "results", cache_dir: Optional[str] = None):
+    def __init__(self, output_dir: str = "results", cache_dir: Optional[str] = None, 
+                 data_cache_dir: Optional[str] = None):
         self.output_dir = Path(output_dir)
         self.cache_dir = cache_dir
         self.output_dir.mkdir(exist_ok=True)
@@ -44,9 +52,17 @@ class LLMEvaluationRunner:
         (self.output_dir / "agent_tests").mkdir(exist_ok=True)
         (self.output_dir / "comparisons").mkdir(exist_ok=True)
         (self.output_dir / "reports").mkdir(exist_ok=True)
+        (self.output_dir / "dataset_results").mkdir(exist_ok=True)
         
+        # Initialize dataset manager
+        self.dataset_manager = EvaluationDatasetManager(
+            cache_dir=data_cache_dir or "evaluation_data"
+        )
         self.evaluation_results = {}
+        
+        # Load both synthetic and real test suites
         self.test_suite = self._load_test_suite()
+        self.real_datasets = {}
         
     def _load_test_suite(self) -> Dict[str, List]:
         """Load agent evaluation test suite"""
@@ -162,10 +178,17 @@ class LLMEvaluationRunner:
             performance_metrics = self._run_performance_benchmark(model)
             results["performance"] = vars(performance_metrics) if performance_metrics else None
             
-            # Agent capability evaluation
-            logger.info(f"Running agent evaluation for {model_name}...")
-            agent_results = model.evaluate_agent_capabilities(self.test_suite)
-            results["agent_evaluation"] = vars(agent_results) if agent_results else None
+            # Real dataset evaluation (unless synthetic-only)
+            if not getattr(self, '_synthetic_only', False):
+                logger.info(f"Running real dataset evaluation for {model_name}...")
+                dataset_results = self._run_dataset_evaluation(model, preset)
+                results["dataset_evaluation"] = dataset_results
+            
+            # Agent capability evaluation (synthetic tests, unless datasets-only)
+            if not getattr(self, '_datasets_only', False):
+                logger.info(f"Running synthetic agent evaluation for {model_name}...")
+                agent_results = model.evaluate_agent_capabilities(self.test_suite)
+                results["agent_evaluation"] = vars(agent_results) if agent_results else None
             
             # Memory usage analysis
             results["memory_analysis"] = model.get_memory_usage()
@@ -236,6 +259,252 @@ class LLMEvaluationRunner:
         except Exception as e:
             logger.error(f"Performance benchmark failed: {e}")
             return None
+    
+    def _run_dataset_evaluation(self, model: BaseModelImplementation, preset: str = "balanced") -> Dict[str, Any]:
+        """Run evaluation on real datasets"""
+        dataset_results = {
+            "datasets_evaluated": [],
+            "total_samples": 0,
+            "evaluation_time": 0,
+            "results_by_dataset": {},
+            "summary_scores": {}
+        }
+        
+        try:
+            # Get recommended datasets for the model type
+            recommended_datasets = self.dataset_manager.get_recommended_datasets()
+            
+            # Limit datasets based on preset (fewer for quick testing)
+            if preset == "memory_optimized":
+                recommended_datasets = recommended_datasets[:3]  # Just 3 datasets
+            elif preset == "balanced":
+                recommended_datasets = recommended_datasets[:5]  # 5 datasets
+            # Performance preset uses all recommended datasets
+            
+            total_start_time = time.time()
+            
+            for dataset_name in recommended_datasets:
+                logger.info(f"Evaluating on dataset: {dataset_name}")
+                
+                try:
+                    # Load or download dataset
+                    dataset = self.dataset_manager.load_cached_dataset(dataset_name)
+                    if not dataset:
+                        logger.info(f"Downloading {dataset_name}...")
+                        dataset = self.dataset_manager.download_dataset(dataset_name)
+                    
+                    if not dataset or "error" in dataset:
+                        logger.warning(f"Skipping {dataset_name} due to download/load error")
+                        continue
+                    
+                    # Run evaluation on dataset
+                    dataset_result = self._evaluate_on_single_dataset(model, dataset, dataset_name)
+                    dataset_results["results_by_dataset"][dataset_name] = dataset_result
+                    dataset_results["datasets_evaluated"].append(dataset_name)
+                    dataset_results["total_samples"] += dataset_result.get("samples_evaluated", 0)
+                    
+                except Exception as e:
+                    logger.error(f"Failed to evaluate on {dataset_name}: {e}")
+                    dataset_results["results_by_dataset"][dataset_name] = {"error": str(e)}
+            
+            dataset_results["evaluation_time"] = time.time() - total_start_time
+            
+            # Calculate summary scores across all datasets
+            dataset_results["summary_scores"] = self._calculate_summary_scores(
+                dataset_results["results_by_dataset"]
+            )
+            
+        except Exception as e:
+            logger.error(f"Dataset evaluation failed: {e}")
+            dataset_results["error"] = str(e)
+        
+        return dataset_results
+    
+    def _evaluate_on_single_dataset(self, model: BaseModelImplementation, 
+                                   dataset: Dict, dataset_name: str) -> Dict[str, Any]:
+        """Evaluate model on a single dataset"""
+        samples = dataset.get("samples", [])
+        if not samples:
+            return {"error": "No samples in dataset", "samples_evaluated": 0}
+        
+        # Limit samples for efficiency (can be configured)
+        max_samples = 100  # Adjust based on dataset size and time constraints
+        if len(samples) > max_samples:
+            samples = samples[:max_samples]
+            logger.info(f"Limited {dataset_name} to {max_samples} samples")
+        
+        predictions = []
+        evaluation_errors = 0
+        
+        start_time = time.time()
+        
+        for i, sample in enumerate(samples):
+            try:
+                # Generate prediction based on sample type
+                prompt = self._create_prompt_from_sample(sample, dataset["task_type"])
+                prediction = model.generate_response(prompt)
+                predictions.append(prediction)
+                
+                if (i + 1) % 10 == 0:
+                    logger.info(f"Completed {i + 1}/{len(samples)} samples for {dataset_name}")
+                    
+            except Exception as e:
+                logger.warning(f"Failed to generate prediction for sample {i}: {e}")
+                predictions.append("")  # Empty prediction for failed cases
+                evaluation_errors += 1
+        
+        evaluation_time = time.time() - start_time
+        
+        # Calculate metrics using the metrics module
+        try:
+            metrics_results = evaluate_dataset_predictions(
+                dataset["task_type"], predictions, samples
+            )
+            
+            # Convert EvaluationResult objects to dictionaries
+            metrics_dict = {}
+            for metric_name, result in metrics_results.items():
+                metrics_dict[metric_name] = {
+                    "score": result.score,
+                    "total_samples": result.total_samples,
+                    "successful_samples": result.successful_samples,
+                    "metric_name": result.metric_name,
+                    "details": result.details
+                }
+            
+        except Exception as e:
+            logger.error(f"Metrics calculation failed for {dataset_name}: {e}")
+            metrics_dict = {"error": str(e)}
+        
+        return {
+            "dataset_name": dataset_name,
+            "task_type": dataset["task_type"],
+            "samples_evaluated": len(samples),
+            "evaluation_errors": evaluation_errors,
+            "evaluation_time_seconds": evaluation_time,
+            "avg_time_per_sample": evaluation_time / len(samples) if samples else 0,
+            "metrics": metrics_dict,
+            "sample_predictions": predictions[:5],  # First 5 for debugging
+        }
+    
+    def _create_prompt_from_sample(self, sample: Dict, task_type: str) -> str:
+        """Create appropriate prompt from dataset sample"""
+        if task_type == "coding":
+            prompt = sample.get("prompt", "")
+            if not prompt and "question" in sample:
+                prompt = f"Write Python code to solve: {sample['question']}"
+            return prompt
+        
+        elif task_type == "function_calling":
+            prompt = sample.get("prompt", "")
+            functions = sample.get("functions", [])
+            
+            if functions:
+                # Add function definitions to prompt
+                func_desc = "Available functions:\n"
+                for func in functions:
+                    func_desc += f"- {func.get('name', 'unknown')}: {func.get('description', '')}\n"
+                prompt = f"{func_desc}\nTask: {prompt}"
+            
+            return prompt
+        
+        elif task_type == "reasoning":
+            question = sample.get("question", "")
+            choices = sample.get("choices", [])
+            
+            if choices:
+                # Multiple choice format
+                choices_text = "\n".join([f"{chr(65+i)}. {choice}" for i, choice in enumerate(choices)])
+                prompt = f"{question}\n\n{choices_text}\n\nAnswer:"
+            else:
+                prompt = f"Solve this problem step by step: {question}"
+            
+            return prompt
+        
+        elif task_type == "instruction_following":
+            instruction = sample.get("instruction", "")
+            input_text = sample.get("input", "")
+            
+            if input_text:
+                prompt = f"{instruction}\n\nInput: {input_text}\n\nOutput:"
+            else:
+                prompt = instruction
+            
+            return prompt
+        
+        elif task_type == "qa":
+            question = sample.get("question", "")
+            choices = sample.get("choices", [])
+            
+            if choices:
+                # Multiple choice format
+                choices_text = "\n".join([f"{chr(65+i)}. {choice}" for i, choice in enumerate(choices)])
+                prompt = f"{question}\n\n{choices_text}\n\nAnswer:"
+            else:
+                prompt = f"Question: {question}\nAnswer:"
+            
+            return prompt
+        
+        else:
+            # Generic format
+            return sample.get("input", sample.get("prompt", sample.get("question", "")))
+    
+    def _calculate_summary_scores(self, dataset_results: Dict[str, Dict]) -> Dict[str, float]:
+        """Calculate summary scores across all evaluated datasets"""
+        summary = {
+            "overall_average": 0.0,
+            "coding_average": 0.0,
+            "reasoning_average": 0.0,
+            "function_calling_average": 0.0,
+            "instruction_following_average": 0.0,
+            "qa_average": 0.0,
+            "datasets_completed": 0,
+            "total_samples": 0
+        }
+        
+        scores_by_type = {
+            "coding": [],
+            "reasoning": [],
+            "function_calling": [],
+            "instruction_following": [],
+            "qa": []
+        }
+        
+        all_scores = []
+        
+        for dataset_name, result in dataset_results.items():
+            if "error" in result:
+                continue
+            
+            summary["datasets_completed"] += 1
+            summary["total_samples"] += result.get("samples_evaluated", 0)
+            
+            task_type = result.get("task_type", "unknown")
+            metrics = result.get("metrics", {})
+            
+            # Extract scores from metrics
+            dataset_scores = []
+            for metric_name, metric_data in metrics.items():
+                if isinstance(metric_data, dict) and "score" in metric_data:
+                    score = metric_data["score"]
+                    dataset_scores.append(score)
+                    all_scores.append(score)
+            
+            # Average score for this dataset
+            if dataset_scores and task_type in scores_by_type:
+                avg_score = sum(dataset_scores) / len(dataset_scores)
+                scores_by_type[task_type].append(avg_score)
+        
+        # Calculate averages by type
+        for task_type, scores in scores_by_type.items():
+            if scores:
+                summary[f"{task_type}_average"] = sum(scores) / len(scores)
+        
+        # Overall average
+        if all_scores:
+            summary["overall_average"] = sum(all_scores) / len(all_scores)
+        
+        return summary
     
     def _save_individual_results(self, model_name: str, results: Dict, preset: str = "balanced"):
         """Save individual model results with preset information"""
@@ -420,9 +689,21 @@ class LLMEvaluationRunner:
         
         logger.info(f"Summary report saved to {report_file}")
     
-    def run_full_evaluation(self, models_to_test: Optional[List[str]] = None, preset: str = "balanced"):
+    def run_full_evaluation(self, models_to_test: Optional[List[str]] = None, preset: str = "balanced",
+                           synthetic_only: bool = False, datasets_only: bool = False):
         """Run complete evaluation suite with enhanced configuration support"""
         logger.info(f"🚀 Starting full LLM evaluation suite with preset: {preset}")
+        
+        # Set evaluation mode flags
+        self._synthetic_only = synthetic_only
+        self._datasets_only = datasets_only
+        
+        if synthetic_only:
+            logger.info("📝 Running synthetic tests only")
+        elif datasets_only:
+            logger.info("📊 Running real datasets only")
+        else:
+            logger.info("🔄 Running both synthetic and real dataset evaluation")
         
         # Determine which models to test
         if models_to_test:
@@ -684,8 +965,15 @@ def main():
     parser.add_argument("--models", nargs="+", help="Specific models to test")
     parser.add_argument("--output-dir", default="results", help="Output directory")
     parser.add_argument("--cache-dir", help="Model cache directory")
+    parser.add_argument("--data-cache-dir", help="Dataset cache directory")
     parser.add_argument("--priority-only", action="store_true", help="Test only high priority models")
     parser.add_argument("--quick-test", action="store_true", help="Run quick test only")
+    
+    # Evaluation options
+    parser.add_argument("--synthetic-only", action="store_true",
+                       help="Use only synthetic test cases (no real datasets)")
+    parser.add_argument("--datasets-only", action="store_true",
+                       help="Use only real datasets (no synthetic tests)")
     
     # NEW: Enhanced configuration arguments
     parser.add_argument("--preset", default="balanced", 
@@ -699,7 +987,7 @@ def main():
     args = parser.parse_args()
     
     # Create runner
-    runner = LLMEvaluationRunner(args.output_dir, args.cache_dir)
+    runner = LLMEvaluationRunner(args.output_dir, args.cache_dir, args.data_cache_dir)
     
     if args.compare_presets:
         # Run preset comparison mode
@@ -727,6 +1015,11 @@ def main():
         qwen_config = MODEL_CONFIGS["qwen3_8b"]
         if args.preset != "balanced":
             qwen_config = qwen_config.create_preset_variant(args.preset)
+        
+        # Set evaluation mode for quick test
+        runner._synthetic_only = args.synthetic_only
+        runner._datasets_only = args.datasets_only
+        
         runner.run_individual_evaluation("qwen3_8b", qwen_config, args.preset)
     else:
         # Full evaluation with preset
@@ -736,7 +1029,7 @@ def main():
         elif args.priority_only:
             models_to_test = list(get_high_priority_models().keys())
         
-        runner.run_full_evaluation(models_to_test, args.preset)
+        runner.run_full_evaluation(models_to_test, args.preset, args.synthetic_only, args.datasets_only)
 
 if __name__ == "__main__":
     main()
