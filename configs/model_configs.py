@@ -61,7 +61,7 @@ class ModelConfig:
                 "block_size": 32,  # Larger blocks for H100
                 "enable_chunked_prefill": True,  # H100 optimization
                 "kv_cache_dtype": "fp8",  # Use H100's native FP8 support
-                "use_v2_block_manager": True,
+                # "use_v2_block_manager": True,  # Not available in vLLM 0.10.2
                 "swap_space": 8,  # 8GB swap for overflow handling
             })
             
@@ -74,7 +74,7 @@ class ModelConfig:
             self.evaluation_batch_size = 4
             self._vllm_overrides.update({
                 "max_num_batched_tokens": 2048,
-                "block_size": 8,  # Smaller blocks
+                "block_size": 16,  # Smaller blocks (must be multiple of 16 for Flash Attention)
             })
             
         else:  # balanced (default)

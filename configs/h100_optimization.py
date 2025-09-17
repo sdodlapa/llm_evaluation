@@ -5,7 +5,12 @@ Target: 80%+ GPU memory usage and computational efficiency
 
 from dataclasses import dataclass
 from typing import Dict, Any, List
-from .model_configs import ModelConfig
+
+# Handle imports for both direct execution and module imports
+try:
+    from .model_configs import ModelConfig
+except ImportError:
+    from model_configs import ModelConfig
 
 @dataclass
 class H100OptimizedConfig:
@@ -93,7 +98,10 @@ H100_OPTIMIZED_CONFIGS = {}
 
 def create_h100_optimized_qwen3_14b() -> ModelConfig:
     """Create maximum utilization Qwen-3 14B config for H100"""
-    from .model_configs import MODEL_CONFIGS
+    try:
+        from .model_configs import MODEL_CONFIGS
+    except ImportError:
+        from model_configs import MODEL_CONFIGS
     
     optimizer = H100OptimizedConfig()
     base_config = MODEL_CONFIGS["qwen3_14b"]
@@ -116,7 +124,10 @@ def create_h100_optimized_qwen3_14b() -> ModelConfig:
 
 def create_h100_optimized_qwen3_8b() -> ModelConfig:
     """Create maximum utilization Qwen-3 8B config for H100"""
-    from .model_configs import MODEL_CONFIGS
+    try:
+        from .model_configs import MODEL_CONFIGS
+    except ImportError:
+        from model_configs import MODEL_CONFIGS
     
     optimizer = H100OptimizedConfig()
     base_config = MODEL_CONFIGS["qwen3_8b"]
@@ -274,7 +285,10 @@ if __name__ == "__main__":
     print()
     
     # Test current vs optimized configs
-    from .model_configs import MODEL_CONFIGS
+    try:
+        from .model_configs import MODEL_CONFIGS
+    except ImportError:
+        from model_configs import MODEL_CONFIGS
     
     configs_to_test = [
         ("Current Qwen-3 14B", MODEL_CONFIGS["qwen3_14b"]),
