@@ -195,14 +195,14 @@ MODEL_CONFIGS = {
         size_gb=14.0,
         context_window=128000,
         preset="balanced",
-        quantization_method="awq",
+        quantization_method="none",  # AWQ not available, using fp16
         max_model_len=24576,  # Slightly reduced for 14B
-        gpu_memory_utilization=0.80,
+        gpu_memory_utilization=0.70,  # Reduced for unquantized model
         priority="HIGH",
         agent_optimized=True,
         agent_temperature=0.1,
         max_function_calls_per_turn=5,
-        evaluation_batch_size=6  # Smaller batch for larger model
+        evaluation_batch_size=4  # Smaller batch for larger unquantized model
     ),
     
     "deepseek_coder_16b": ModelConfig(
