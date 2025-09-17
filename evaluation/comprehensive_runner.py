@@ -13,8 +13,8 @@ from typing import Dict, List, Any, Optional
 import traceback
 
 from .performance_monitor import LivePerformanceMonitor, EvaluationMetrics
-from .enhanced_dataset_manager import EnhancedDatasetManager
-from .simple_evaluator import evaluate_model
+from .dataset_manager import EnhancedDatasetManager
+from .run_evaluation import evaluate_model
 
 try:
     from ..configs.model_configs import MODEL_CONFIGS

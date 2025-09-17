@@ -613,7 +613,6 @@ MODEL_CONFIGS = {
         evaluation_batch_size=1
     )
 }
-}
 
 # Evaluation comparison models (restricted licenses)
 COMPARISON_MODELS = {

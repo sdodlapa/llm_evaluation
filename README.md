@@ -1,54 +1,67 @@
-````markdown
-# LLM Evaluation Framework
+# 🚀 LLM Evaluation Framework
 
-A comprehensive evaluation framework for Large Language Models, optimized for NVIDIA H100 GPUs and focused on Qwen model families.
+A comprehensive, scalable framework for evaluating Large Language Models across multiple benchmarks and specialized tasks.
 
-## 🎯 Overview
+## ✨ Key Features
 
-This framework provides production-ready LLM evaluation capabilities with:
-- **Multi-model support**: 6 Qwen variants across different sizes and versions
-- **H100 optimization**: Advanced GPU utilization with 119+ tokens/sec performance
-- **Comprehensive datasets**: 12+ evaluation datasets covering coding, reasoning, and function calling
-- **Modular architecture**: Extensible design for easy addition of new models and benchmarks
-- **Production ready**: Robust error handling, comprehensive logging, and automated reporting
-
-## 🏗️ Architecture
-
-### Core Components
-```
-llm_evaluation/
-├── configs/                      # Model configurations and presets
-├── models/                       # Model implementations with registry pattern
-├── evaluation/                   # Core evaluation pipeline
-├── evaluation_data/              # Standardized dataset storage
-└── results/                      # Organized evaluation outputs
-```
-
-### Design Principles
-- **Modularity**: Each component has single responsibility
-- **Extensibility**: Easy addition of new models via registry pattern
-- **Performance**: Optimized for H100 with Flash Attention and CUDA graphs
-- **Reliability**: Comprehensive error handling and resource management
+- **22+ Models**: Complete Qwen series + strategic alternatives (Llama, Phi, DeepSeek)
+- **12 Datasets**: Coding, reasoning, QA, function calling, instruction following
+- **Real-time Monitoring**: GPU utilization, memory usage, throughput tracking
+- **Specialized Models**: Math, coding, genomics, efficiency-optimized variants
+- **Clean Architecture**: Consolidated, maintainable, scalable structure
 
 ## 🚀 Quick Start
 
-### Installation
+### 1. Install Dependencies
 ```bash
-# Clone repository
-git clone <repository-url>
-cd llm_evaluation
-
-# Install dependencies
 pip install -r requirements.txt
-
-# Download recommended datasets
-python manage_datasets.py --download-recommended
 ```
 
-### Basic Usage
+### 2. Basic Evaluation
 ```bash
-# Single model evaluation
-python evaluation/run_evaluation.py --models qwen3_8b --preset balanced
+# Quick validation (5 samples)
+python evaluation/run_evaluation.py --model qwen3_8b --dataset humaneval --samples 5
+
+# Comprehensive evaluation (200 samples)
+python evaluation/run_evaluation.py --model qwen3_8b --dataset humaneval --samples 200
+
+# Multiple models and datasets
+python evaluation/run_evaluation.py --model qwen3_8b,qwen3_14b --dataset humaneval,gsm8k
+```
+
+### 3. Specialized Evaluations
+```bash
+# Math specialist validation
+python evaluation/run_evaluation.py --model qwen25_math_7b --dataset gsm8k
+
+# Coding specialist validation  
+python evaluation/run_evaluation.py --model qwen3_coder_30b --dataset humaneval
+
+# Efficiency comparison
+python evaluation/run_evaluation.py --model qwen25_0_5b,qwen25_3b --dataset humaneval
+```
+
+## 📁 Project Structure
+
+```
+llm_evaluation/
+├── 📁 evaluation/              # Core evaluation system
+│   ├── run_evaluation.py       # Main entry point
+│   ├── dataset_manager.py      # Dataset handling (12 datasets)
+│   ├── performance_monitor.py  # Real-time monitoring
+│   ├── comprehensive_runner.py # Advanced evaluation orchestrator
+│   └── metrics.py             # Evaluation metrics
+├── 📁 models/                  # Model implementations
+│   ├── registry.py            # Model discovery/loading
+│   ├── base_model.py          # Abstract base class
+│   └── qwen_implementation.py # Qwen-specific implementation
+├── 📁 configs/                 # Configuration management
+│   └── model_configs.py       # Model definitions (22+ models)
+├── 📁 evaluation_data/         # Dataset storage
+├── 📁 results/                 # Evaluation outputs
+├── 📁 docs/                    # Documentation
+└── 📁 archive/                 # Historical/redundant files
+```
 
 # Multi-model comparison
 python evaluation/run_evaluation.py --models qwen3_8b,qwen3_14b --preset performance
