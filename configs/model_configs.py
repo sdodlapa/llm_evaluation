@@ -50,14 +50,19 @@ class ModelConfig:
     def apply_preset(self):
         """Apply preset-specific optimizations"""
         if self.preset == "performance":
-            # Maximize speed, higher memory usage
-            self.gpu_memory_utilization = 0.90
-            self.max_num_seqs = 128
+            # Maximize speed, higher memory usage - H100 optimized
+            self.gpu_memory_utilization = 0.95  # Very aggressive for H100
+            self.max_num_seqs = 512  # Maximum throughput batching
             self.enforce_eager = False  # Allow CUDA graphs
-            self.evaluation_batch_size = 16
+            self.evaluation_batch_size = 64  # Large evaluation batches
             self._vllm_overrides.update({
-                "max_num_batched_tokens": 8192,
+                "max_num_batched_tokens": 32768,  # Large token batches for H100
                 "disable_log_stats": True,
+                "block_size": 32,  # Larger blocks for H100
+                "enable_chunked_prefill": True,  # H100 optimization
+                "kv_cache_dtype": "fp8",  # Use H100's native FP8 support
+                "use_v2_block_manager": True,
+                "swap_space": 8,  # 8GB swap for overflow handling
             })
             
         elif self.preset == "memory_optimized":
@@ -194,15 +199,17 @@ MODEL_CONFIGS = {
         license="Apache 2.0",
         size_gb=14.0,
         context_window=128000,
-        preset="balanced",
+        preset="performance",  # Changed to performance for maximum utilization
         quantization_method="awq_marlin",  # Use AWQ-Marlin kernel for 5x speedup!
-        max_model_len=24576,  # Slightly reduced for 14B
-        gpu_memory_utilization=0.80,  # Increased back for quantized model
+        max_model_len=49152,  # Increased context length for better H100 utilization (48K)
+        gpu_memory_utilization=0.90,  # Increased to 90% for maximum memory usage
         priority="HIGH",
         agent_optimized=True,
         agent_temperature=0.1,
         max_function_calls_per_turn=5,
-        evaluation_batch_size=6  # Restored batch size for quantized model
+        evaluation_batch_size=32,  # Significantly increased batch size for throughput
+        max_num_seqs=256,  # Much higher sequence batching for H100
+        benchmark_iterations=5  # More iterations for better benchmarking
     ),
     
     "deepseek_coder_16b": ModelConfig(
