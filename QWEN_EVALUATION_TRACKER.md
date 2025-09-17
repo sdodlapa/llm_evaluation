@@ -3,8 +3,8 @@
 ## Overview
 This document tracks the evaluation progress, results, and insights for all Qwen model variants in our LLM evaluation framework. We focus exclusively on Qwen models to provide deep analysis and comparison across different model sizes and configuration presets.
 
-**Last Updated:** September 17, 2025  
-**Framework Version:** v1.0  
+**Last Updated:** September 17, 2025 (v1.2)  
+**Framework Version:** v1.2 - HumanEval Fix Applied  
 **GPU Environment:** NVIDIA H100 80GB HBM3  
 
 ---
@@ -103,8 +103,55 @@ Memory Efficiency: Excellent - room for larger models
 
 ---
 
-#### **Balanced Preset Evaluation**
-**Status:** ⏳ NOT YET TESTED
+#### **Balanced Preset Evaluation (September 17, 2025)**
+
+**✅ COMPLETED** - Real dataset evaluation with balanced preset
+
+##### **System Performance**
+- **Memory Usage:** 5.87GB GPU memory (7.3% H100 utilization)
+- **Throughput:** 119.73 tokens/second
+- **GPU Utilization:** 88%
+- **Inference Speed:** Excellent (130-140 tokens/s output)
+
+##### **Dataset Evaluation Results**
+
+| Dataset | Task Type | Samples | Score | Status | Notes |
+|---------|-----------|---------|-------|--------|-------|
+| **HumanEval** | Code Generation | 100 | **0.0%** | ❌ STILL FAILED | Code extraction improvements didn't resolve execution issues |
+| **MBPP** | Python Coding | 100 | **0.0%** | ❌ STILL FAILED | Code pipeline needs further debugging |
+
+##### **Agent Evaluation Results**
+- **Function Calling Accuracy:** 33.3% (improved from 0%)
+- **Instruction Following:** 77.8% (strong performance)
+- **Multi-turn Coherence:** 55.6% (moderate)
+- **Tool Use Success:** 0.0% (needs work)
+- **Reasoning Quality:** 50.0% (moderate)
+- **JSON Output Validity:** 100% (excellent)
+
+##### **Function Calling Test**
+- **Accuracy:** 0.0% (0/4 successful calls)
+- **Status:** ❌ STILL NEEDS WORK
+- **Issue:** JSON format generation still problematic
+
+##### **Technical Analysis**
+1. **Code Generation:** Despite fixes, still 0% success - responses contain proper code but execution pipeline issues remain
+2. **Agent Capabilities:** Significant improvement in instruction following and JSON output
+3. **Function Calling:** Mixed results - improved in agent eval but failed in specific tests
+4. **Memory Efficiency:** Better than performance preset (5.87GB vs 14.25GB)
+
+##### **Configuration Used**
+```json
+{
+  "preset": "balanced",
+  "quantization_method": "none",
+  "max_model_len": 32768,
+  "gpu_memory_utilization": 0.85,
+  "max_num_seqs": 64,
+  "evaluation_batch_size": 8,
+  "agent_temperature": 0.1,
+  "enable_prefix_caching": true
+}
+```
 
 #### **Memory Optimized Preset Evaluation**
 **Status:** ⏳ NOT YET TESTED
@@ -120,20 +167,74 @@ Memory Efficiency: Excellent - room for larger models
 
 ## Comparative Analysis
 
-### Performance Baseline (Qwen-3 8B Performance Preset)
-- ✅ **Strengths:** Mathematical reasoning (56%), high throughput (119 tok/s), memory efficient
-- ❌ **Weaknesses:** Code generation, function calling, multiple choice parsing
-- 🎯 **Next Focus:** Fix prompt engineering and evaluation metrics
+### Performance vs Balanced Preset Comparison
+
+| Metric | Performance Preset | Balanced Preset | Difference |
+|--------|-------------------|-----------------|------------|
+| **GPU Memory Usage** | 14.25GB (17.8%) | 5.87GB (7.3%) | -58.8% memory |
+| **Throughput** | 119.02 tok/s | 119.73 tok/s | +0.6% speed |
+| **GPU Utilization** | 86% | 88% | +2% efficiency |
+| **Max Sequences** | 128 | 64 | -50% batch size |
+| **Batch Size** | 16 | 8 | -50% eval batch |
+
+### Dataset Performance Comparison
+
+| Dataset | Performance Preset | Balanced Preset | Improvement |
+|---------|-------------------|-----------------|-------------|
+| **GSM8K** | 56.0% | Not tested | - |
+| **HumanEval** | 0.0% | 0.0% | No change |
+| **MBPP** | 0.0% | 0.0% | No change |
+| **Function Calling** | 0.0% | 0.0% | No change |
+
+### Agent Capabilities (Balanced Only)
+- ✅ **Instruction Following:** 77.8% (strong)
+- ✅ **JSON Output Validity:** 100% (excellent)
+- ⚠️ **Function Calling:** 33.3% (improved but inconsistent)
+- ⚠️ **Multi-turn Coherence:** 55.6% (moderate)
+- ❌ **Tool Use Success:** 0.0% (needs work)
+
+### Key Insights
+- ✅ **Memory Efficiency:** Balanced preset uses 58.8% less GPU memory with same performance
+- ✅ **Agent Improvements:** Better instruction following and JSON formatting
+- ❌ **Code Generation:** Still broken despite extraction fixes - deeper pipeline issues
+- ⚠️ **Mixed Function Calling:** Improved in agent eval but failed in dedicated tests
+- 🎯 **Next Focus:** Debug code execution pipeline and test case validation
+
+#### **Critical Bug Discovery & Fix (v1.2)**
+
+**Issue Identified:** HumanEval and MBPP showing 0% accuracy despite correct code generation
+- **Root Cause:** Format mismatch in evaluation pipeline
+- **Technical Details:** HumanEval uses `check(candidate)` function format, but pipeline expected `input/output` dictionary format
+- **Investigation:** Created debug scripts proving individual code execution works perfectly
+- **Solution:** Implemented `_execute_humaneval_tests()` method and updated `evaluate_dataset_predictions()`
+
+**Fix Implementation:**
+```python
+# Added HumanEval-specific test execution
+def _execute_humaneval_tests(code: str, test_code: str) -> dict:
+    # Execute check(candidate) format tests properly
+    
+# Updated evaluation pipeline
+def code_execution_accuracy(self, predictions, test_cases, dataset_name=None):
+    if dataset_name and dataset_name.lower() in ["humaneval", "mbpp"]:
+        result = self._execute_humaneval_tests(code, tests)
+```
+
+**Validation Results:**
+- ✅ Debug tests show 100% accuracy on working code samples
+- ✅ Pipeline correctly detects HumanEval format from dataset IDs
+- ✅ Backward compatibility maintained for other dataset formats
+- 🔄 **Status:** Ready for full re-evaluation
 
 ---
 
 ## Upcoming Evaluations
 
-### **Phase 1: Fix Current Issues (Priority: HIGH)**
-- [ ] Debug code generation prompt templates
-- [ ] Fix function calling JSON format
-- [ ] Improve multiple choice answer parsing
-- [ ] Validate evaluation metrics
+### **Phase 1: Re-evaluate with Fixed Pipeline (Priority: URGENT)**
+- [ ] **Re-run HumanEval evaluation** with fixed code execution pipeline
+- [ ] **Verify MBPP results** (may need different fix due to empty test_cases)
+- [ ] **Validate other datasets** weren't affected by the fix
+- [ ] **Update performance tracking** with corrected scores
 
 ### **Phase 2: Complete Qwen-3 8B Testing**
 - [ ] Test balanced preset on real datasets
@@ -157,6 +258,11 @@ Memory Efficiency: Excellent - room for larger models
 
 ## Research Questions
 
+### **Pipeline Reliability**
+- **RESOLVED:** Why were code execution scores showing 0%? (Format mismatch)
+- How many other datasets have similar format issues?
+- What validation can prevent similar bugs in the future?
+
 ### **Model Size Impact**
 - How does performance scale from 8B to 14B parameters?
 - What is the optimal size for different task types?
@@ -168,7 +274,7 @@ Memory Efficiency: Excellent - room for larger models
 - What are the bottlenecks in current setup?
 
 ### **Task-Specific Performance**
-- Why is math reasoning strong but code generation weak?
+- Why is math reasoning strong but code generation weak? (NEEDS RE-EVALUATION)
 - How can we improve function calling accuracy?
 - What prompt engineering improvements are needed?
 
@@ -197,6 +303,23 @@ Memory Efficiency: Excellent - room for larger models
 ---
 
 ## Changelog
+
+### v1.1 - September 17, 2025
+- ✅ **Qwen-3 8B balanced preset evaluation completed**
+- ✅ **Code extraction pipeline improvements implemented** 
+  - Added `_extract_code_from_response` function with markdown parsing
+  - Enhanced function calling JSON extraction capabilities
+- ⚠️ **Mixed results on code generation fixes**
+  - Code extraction working but execution pipeline still has issues
+  - 0% accuracy persists on HumanEval/MBPP despite proper code formatting
+- ✅ **Agent capabilities significantly improved**
+  - Instruction following: 77.8% accuracy
+  - JSON output validity: 100% 
+  - Function calling: 33.3% (up from 0%)
+- ✅ **Memory efficiency gains**
+  - Balanced preset uses 58.8% less memory than performance preset
+  - Same throughput performance (119 tok/s)
+- 📋 **Identified next priorities:** Code execution debugging, test case validation
 
 ### v1.0 - September 17, 2025
 - ✅ Initial Qwen-3 8B performance preset evaluation completed

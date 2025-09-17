@@ -230,6 +230,84 @@ class EvaluationMetrics:
             }
     
     @staticmethod
+    def _execute_humaneval_tests(code: str, test_code: str, timeout: int = 5) -> dict:
+        """Execute HumanEval test cases in the check(candidate) format"""
+        import ast
+        
+        # Extract function from code
+        try:
+            tree = ast.parse(code)
+            function_name = None
+            
+            for node in ast.walk(tree):
+                if isinstance(node, ast.FunctionDef):
+                    function_name = node.name
+                    break
+            
+            if not function_name:
+                return {"passed": False, "error": "No function found", "tests_run": 0, "tests_passed": 0}
+            
+        except SyntaxError as e:
+            return {"passed": False, "error": f"Syntax error: {e}", "tests_run": 0, "tests_passed": 0}
+        
+        # Create execution environment
+        exec_globals = {}
+        
+        try:
+            # Execute the solution code
+            exec(code, exec_globals)
+            
+            if function_name not in exec_globals:
+                return {"passed": False, "error": f"Function {function_name} not found after execution", 
+                       "tests_run": 0, "tests_passed": 0}
+            
+            candidate_func = exec_globals[function_name]
+            
+            # Execute the test code with the candidate function
+            test_globals = {"candidate": candidate_func}
+            exec(test_code, test_globals)
+            
+            # Find and execute the check function
+            if "check" in test_globals:
+                check_func = test_globals["check"]
+                check_func(candidate_func)  # This will raise AssertionError if any test fails
+                
+                # If we get here, all tests passed
+                # Count the number of assert statements to estimate tests run
+                test_lines = test_code.split('\n')
+                assert_count = sum(1 for line in test_lines if 'assert' in line.strip())
+                
+                return {
+                    "passed": True,
+                    "tests_run": assert_count,
+                    "tests_passed": assert_count,
+                    "error": None
+                }
+            else:
+                return {"passed": False, "error": "No check function found in test code", 
+                       "tests_run": 0, "tests_passed": 0}
+            
+        except AssertionError:
+            # Some test failed
+            test_lines = test_code.split('\n')
+            assert_count = sum(1 for line in test_lines if 'assert' in line.strip())
+            
+            return {
+                "passed": False,
+                "tests_run": assert_count,
+                "tests_passed": 0,  # We don't know how many passed before the failure
+                "error": "Test assertion failed"
+            }
+            
+        except Exception as e:
+            return {
+                "passed": False,
+                "error": str(e),
+                "tests_run": 0,
+                "tests_passed": 0
+            }
+
+    @staticmethod
     def _extract_code_from_response(response: str) -> str:
         """Extract Python code from model response with markdown formatting"""
         import re
@@ -656,8 +734,52 @@ class EvaluationMetrics:
         
         return min(1.0, relevance + 0.3 * length_score)
 
+    def code_execution_accuracy(self, predictions: List[str], test_cases: List[Union[List[Dict], str]], 
+                               dataset_name: str = None) -> EvaluationResult:
+        """Instance method for code execution accuracy with HumanEval support"""
+        if not predictions or not test_cases:
+            return EvaluationResult(metric_name="code_execution", score=0.0, total_samples=0, successful_samples=0)
+        
+        correct = 0
+        total = 0
+        results = []
+        
+        for pred, tests in zip(predictions, test_cases):
+            if not tests:  # Skip if no test cases
+                continue
+                
+            total += 1
+            
+            # Extract code from prediction
+            code = self._extract_code_from_response(pred)
+            if not code:
+                results.append({"passed": False, "error": "No code found", "tests_run": 0, "tests_passed": 0})
+                continue
+            
+            # Execute tests based on dataset format
+            if isinstance(tests, str) and (dataset_name and dataset_name.lower() in ["humaneval", "mbpp"]):
+                # Handle HumanEval/MBPP format where test_cases is a string
+                result = self._execute_humaneval_tests(code, tests)
+            else:
+                # Original format - convert string to empty list if needed
+                if isinstance(tests, str):
+                    tests = []
+                result = self._execute_code_tests(code, tests, timeout=5)
+            
+            results.append(result)
+            if result.get("passed", False):
+                correct += 1
+        
+        return EvaluationResult(
+            metric_name="code_execution", 
+            score=correct / total if total > 0 else 0.0, 
+            total_samples=total,
+            successful_samples=correct,
+            details={"test_results": results[:5]}  # First 5 for debugging
+        )
+
 def evaluate_dataset_predictions(dataset_type: str, predictions: List[str], 
-                               dataset_samples: List[Dict]) -> Dict[str, EvaluationResult]:
+                               dataset_samples: List[Dict], dataset_name: str = None) -> Dict[str, EvaluationResult]:
     """Evaluate predictions against a dataset"""
     metrics = EvaluationMetrics()
     results = {}
@@ -667,8 +789,16 @@ def evaluate_dataset_predictions(dataset_type: str, predictions: List[str],
         test_cases = [sample.get("test_cases", []) for sample in dataset_samples]
         expected_outputs = [sample.get("expected_output", "") for sample in dataset_samples]
         
+        # Try to detect dataset name from first sample if not provided
+        if not dataset_name and dataset_samples:
+            first_id = dataset_samples[0].get("id", "")
+            if "HumanEval" in first_id:
+                dataset_name = "HumanEval"
+            elif "mbpp" in first_id.lower():
+                dataset_name = "MBPP"
+        
         if any(test_cases):
-            results["code_execution"] = metrics.code_execution_accuracy(predictions, test_cases)
+            results["code_execution"] = metrics.code_execution_accuracy(predictions, test_cases, dataset_name)
         
         if expected_outputs:
             results["exact_match"] = metrics.exact_match(predictions, expected_outputs)
