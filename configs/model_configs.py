@@ -95,7 +95,7 @@ class ModelConfig:
             self.gpu_memory_utilization = 0.90
         
         # Check quantization compatibility
-        if self.quantization_method not in ["awq", "gptq", "none"]:
+        if self.quantization_method not in ["awq", "awq_marlin", "gptq", "none"]:
             warnings_list.append(f"Unsupported quantization: {self.quantization_method}, using 'awq'")
             self.quantization_method = "awq"
         
@@ -195,7 +195,7 @@ MODEL_CONFIGS = {
         size_gb=14.0,
         context_window=128000,
         preset="balanced",
-        quantization_method="awq",  # AWQ quantization enabled
+        quantization_method="awq_marlin",  # Use AWQ-Marlin kernel for 5x speedup!
         max_model_len=24576,  # Slightly reduced for 14B
         gpu_memory_utilization=0.80,  # Increased back for quantized model
         priority="HIGH",

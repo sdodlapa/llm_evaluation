@@ -333,6 +333,33 @@ If you don't need to use a function, respond normally with helpful information."
             }
         
         return comparison
+    
+    def cleanup(self) -> None:
+        """Clean up resources and properly shutdown the model"""
+        try:
+            if hasattr(self, 'llm_engine') and self.llm_engine is not None:
+                # Clean up vLLM engine
+                del self.llm_engine
+                self.llm_engine = None
+                logger.info(f"✅ {self.model_name} engine cleaned up")
+            
+            if hasattr(self, 'tokenizer') and self.tokenizer is not None:
+                # Clean up tokenizer
+                del self.tokenizer
+                self.tokenizer = None
+            
+            self.is_loaded = False
+            
+            # Force garbage collection to free GPU memory
+            import gc
+            import torch
+            gc.collect()
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+                logger.info("✅ GPU memory cache cleared")
+                
+        except Exception as e:
+            logger.warning(f"Error during cleanup: {e}")
 
 # Enhanced factory functions using ModelConfig
 def create_qwen3_8b(preset: str = "balanced", cache_dir: Optional[str] = None) -> Qwen3Implementation:
