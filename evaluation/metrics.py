@@ -118,9 +118,11 @@ class EvaluationMetrics:
         results = []
         successful = 0
         
-        for i, (code, tests) in enumerate(zip(predictions, test_cases)):
+        for i, (response, tests) in enumerate(zip(predictions, test_cases)):
             try:
-                test_result = EvaluationMetrics._execute_code_tests(code, tests, timeout)
+                # Extract code from markdown response
+                extracted_code = EvaluationMetrics._extract_code_from_response(response)
+                test_result = EvaluationMetrics._execute_code_tests(extracted_code, tests, timeout)
                 results.append(test_result)
                 if test_result["passed"]:
                     successful += 1
@@ -228,6 +230,76 @@ class EvaluationMetrics:
             }
     
     @staticmethod
+    def _extract_code_from_response(response: str) -> str:
+        """Extract Python code from model response with markdown formatting"""
+        import re
+        
+        # Remove any leading/trailing whitespace
+        response = response.strip()
+        
+        # Pattern 1: Code blocks with ```python or ``` (most common)
+        python_block_pattern = r'```(?:python)?\s*\n(.*?)\n```'
+        matches = re.findall(python_block_pattern, response, re.DOTALL | re.IGNORECASE)
+        
+        if matches:
+            # Return the first/largest code block
+            return max(matches, key=len).strip()
+        
+        # Pattern 2: Inline code with single backticks (less common for full functions)
+        inline_pattern = r'`([^`]+)`'
+        inline_matches = re.findall(inline_pattern, response)
+        
+        # Check if any inline code looks like a function definition
+        for match in inline_matches:
+            if 'def ' in match and '(' in match and ')' in match:
+                return match.strip()
+        
+        # Pattern 3: If no markdown formatting, try to find function definitions directly
+        lines = response.split('\n')
+        code_lines = []
+        in_code_block = False
+        current_indent = 0
+        
+        for line in lines:
+            stripped = line.strip()
+            
+            # Start collecting when we see 'def ' or imports
+            if any(stripped.startswith(keyword) for keyword in ['def ', 'from ', 'import ', 'class ']):
+                in_code_block = True
+                current_indent = len(line) - len(line.lstrip())
+                code_lines.append(line)
+                continue
+            
+            if in_code_block:
+                line_indent = len(line) - len(line.lstrip())
+                
+                # If line is empty or indented more than function def, include it
+                if not stripped or line_indent > current_indent:
+                    code_lines.append(line)
+                # If line has same or less indent and starts with code keywords, include it
+                elif stripped and line_indent <= current_indent and any(stripped.startswith(kw) for kw in 
+                    ['if ', 'for ', 'while ', 'try:', 'except', 'else:', 'elif ', 'return', 'yield', 
+                     'break', 'continue', 'pass', 'def ', 'class ', 'import ', 'from ']):
+                    code_lines.append(line)
+                # Stop if we hit explanation text
+                elif any(keyword in stripped.lower() for keyword in ['this function', 'explanation', 'the code', 
+                                                                  'example usage', 'output:', 'result:', 'note:']):
+                    break
+                # Stop if we hit a line that looks like natural language
+                elif stripped and not line.startswith(' ') and len(stripped.split()) > 5:
+                    break
+                else:
+                    # Include other lines that might be part of the function
+                    code_lines.append(line)
+        
+        if code_lines:
+            return '\n'.join(code_lines).strip()
+        
+        # Pattern 4: Last resort - return the response as-is and let the parser handle it
+        # This might fail but gives us debugging info
+        return response
+    
+    @staticmethod
     def function_calling_accuracy(predictions: List[str], expected_calls: List[List[Dict]]) -> EvaluationResult:
         """Evaluate function calling accuracy"""
         if len(predictions) != len(expected_calls):
@@ -271,10 +343,28 @@ class EvaluationMetrics:
     @staticmethod
     def _extract_function_calls(text: str) -> List[Dict]:
         """Extract function calls from model output"""
+        import re
+        import json
+        
         calls = []
         
-        # Look for JSON-style function calls
-        json_pattern = r'\{[^}]*"function_call"[^}]*\{[^}]*\}[^}]*\}'
+        # Pattern 1: JSON code blocks with function_call
+        json_block_pattern = r'```json\s*\n(.*?)\n```'
+        json_blocks = re.findall(json_block_pattern, text, re.DOTALL | re.IGNORECASE)
+        
+        for block in json_blocks:
+            try:
+                parsed = json.loads(block)
+                if "function_call" in parsed:
+                    calls.append(parsed["function_call"])
+                elif isinstance(parsed, dict) and "name" in parsed:
+                    # Direct function call format
+                    calls.append(parsed)
+            except json.JSONDecodeError:
+                continue
+        
+        # Pattern 2: Direct JSON objects with function_call (no code blocks)
+        json_pattern = r'\{[^{}]*"function_call"[^{}]*\{[^{}]*\}[^{}]*\}'
         matches = re.findall(json_pattern, text, re.DOTALL)
         
         for match in matches:
@@ -285,7 +375,7 @@ class EvaluationMetrics:
             except json.JSONDecodeError:
                 continue
         
-        # Look for XML-style function calls
+        # Pattern 3: XML-style function calls
         xml_pattern = r'<function_call>\s*<name>([^<]+)</name>\s*<arguments>([^<]*)</arguments>\s*</function_call>'
         xml_matches = re.findall(xml_pattern, text, re.DOTALL)
         
@@ -302,8 +392,83 @@ class EvaluationMetrics:
                     "arguments": {"raw": args.strip()}
                 })
         
-        # Look for natural language function calls
-        # This is more heuristic and would need domain-specific patterns
+        # Pattern 4: Function call syntax (function_name(args))
+        func_call_pattern = r'(\w+)\s*\(\s*([^)]*)\s*\)'
+        func_matches = re.findall(func_call_pattern, text)
+        
+        for name, args in func_matches:
+            # Only consider common function names, not every word followed by parentheses
+            if name.lower() in ['calculate', 'get_weather', 'send_email', 'search', 'call', 'execute', 'run']:
+                try:
+                    # Try to parse as JSON-like arguments
+                    if '=' in args:
+                        # Handle keyword arguments: func(arg1="value", arg2="value2")
+                        arg_dict = {}
+                        arg_pairs = args.split(',')
+                        for pair in arg_pairs:
+                            if '=' in pair:
+                                key, val = pair.split('=', 1)
+                                key = key.strip().strip('"\'')
+                                val = val.strip().strip('"\'')
+                                arg_dict[key] = val
+                        calls.append({
+                            "name": name,
+                            "arguments": arg_dict
+                        })
+                    elif args.strip():
+                        # Handle single argument
+                        args_clean = args.strip().strip('"\'')
+                        calls.append({
+                            "name": name,
+                            "arguments": {"value": args_clean}
+                        })
+                    else:
+                        # No arguments
+                        calls.append({
+                            "name": name,
+                            "arguments": {}
+                        })
+                except:
+                    continue
+        
+        # Pattern 5: Structured format (Function: name, Arguments: {...})
+        struct_pattern = r'Function:\s*(\w+)\s*.*?Arguments:\s*(\{[^}]*\}|\S+)'
+        struct_matches = re.findall(struct_pattern, text, re.DOTALL | re.IGNORECASE)
+        
+        for name, args in struct_matches:
+            try:
+                parsed_args = json.loads(args) if args.startswith('{') else {"value": args}
+                calls.append({
+                    "name": name.strip(),
+                    "arguments": parsed_args
+                })
+            except json.JSONDecodeError:
+                calls.append({
+                    "name": name.strip(),
+                    "arguments": {"raw": args.strip()}
+                })
+        
+        # Pattern 6: Natural language patterns
+        nl_patterns = [
+            r'call\s+(\w+)\s+(?:with|using)\s+([^.]+)',
+            r'use\s+(?:the\s+)?(\w+)\s+function\s+(?:with|using)\s+([^.]+)',
+            r'invoke\s+(\w+)\s+(?:with|using)\s+([^.]+)'
+        ]
+        
+        for pattern in nl_patterns:
+            nl_matches = re.findall(pattern, text, re.IGNORECASE)
+            for name, args_text in nl_matches:
+                # Extract key-value pairs from natural language
+                arg_dict = {}
+                if 'location' in args_text.lower() and any(city in args_text for city in ['tokyo', 'london', 'paris', 'new york']):
+                    location_match = re.search(r'(tokyo|london|paris|new york|[A-Z][a-z]+)', args_text, re.IGNORECASE)
+                    if location_match:
+                        arg_dict['location'] = location_match.group(1)
+                
+                calls.append({
+                    "name": name.lower(),
+                    "arguments": arg_dict
+                })
         
         return calls
     

@@ -20,7 +20,7 @@ class ModelConfig:
     preset: str = "balanced"  # "balanced", "performance", "memory_optimized"
     
     # Basic model settings
-    quantization_method: str = "awq"
+    quantization_method: str = "none"  # AWQ not available for this model in vLLM 0.10.2
     max_model_len: int = 32768  # Conservative for agents
     gpu_memory_utilization: float = 0.85
     trust_remote_code: bool = True
@@ -123,7 +123,7 @@ class ModelConfig:
             # Advanced optimizations
             "max_num_seqs": self.max_num_seqs,
             "enable_prefix_caching": self.enable_prefix_caching,
-            "use_v2_block_manager": self.use_v2_block_manager,
+            # "use_v2_block_manager": self.use_v2_block_manager,  # Not available in vLLM 0.10.2
             "enforce_eager": self.enforce_eager,
             
             # Single GPU optimization
@@ -178,7 +178,7 @@ MODEL_CONFIGS = {
         size_gb=7.5,
         context_window=128000,
         preset="balanced",  # Using new preset system
-        quantization_method="awq",
+        quantization_method="none",  # No quantization for now
         max_model_len=32768,  # Agent workloads
         gpu_memory_utilization=0.85,
         priority="HIGH",
