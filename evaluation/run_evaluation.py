@@ -18,15 +18,20 @@ from datetime import datetime
 sys.path.append(str(Path(__file__).parent.parent))
 
 from configs.model_configs import MODEL_CONFIGS, get_high_priority_models, get_agent_optimized_models, ModelConfig, estimate_memory_usage
-from models.qwen_implementation import create_qwen3_8b, create_qwen3_14b
 from models.base_model import BaseModelImplementation, ModelPerformanceMetrics, AgentEvaluationResult
 try:
     from .dataset_manager import EvaluationDatasetManager
     from .metrics import EvaluationMetrics, evaluate_dataset_predictions, print_evaluation_summary
+    from .performance import PerformanceBenchmark
+    from .dataset_evaluation import DatasetEvaluator
+    from .reporting import ResultsManager
 except ImportError:
     # When running as script, use absolute imports
     from dataset_manager import EvaluationDatasetManager
     from metrics import EvaluationMetrics, evaluate_dataset_predictions, print_evaluation_summary
+    from performance import PerformanceBenchmark
+    from dataset_evaluation import DatasetEvaluator
+    from reporting import ResultsManager
 
 logging.basicConfig(
     level=logging.INFO,
@@ -54,10 +59,13 @@ class LLMEvaluationRunner:
         (self.output_dir / "reports").mkdir(exist_ok=True)
         (self.output_dir / "dataset_results").mkdir(exist_ok=True)
         
-        # Initialize dataset manager
+        # Initialize dataset manager, performance benchmark, and dataset evaluator
         self.dataset_manager = EvaluationDatasetManager(
             cache_dir=data_cache_dir or "evaluation_data"
         )
+        self.performance_benchmark = PerformanceBenchmark()
+        self.dataset_evaluator = DatasetEvaluator(self.dataset_manager)
+        self.results_manager = ResultsManager(str(self.output_dir))
         self.evaluation_results = {}
         
         # Load both synthetic and real test suites
@@ -141,7 +149,10 @@ class LLMEvaluationRunner:
             ]
         }
     
-    def run_individual_evaluation(self, model_name: str, model_config: ModelConfig, preset: str = "balanced") -> Dict[str, Any]:
+    def run_individual_evaluation(self, model_name: str, model_config: ModelConfig, preset: str = "balanced",
+                                 save_predictions: bool = False, prediction_count: Optional[int] = None,
+                                 dataset_filter: Optional[List[str]] = None,
+                                 sample_limit: Optional[int] = None) -> Dict[str, Any]:
         """Run complete evaluation with enhanced configuration support"""
         logger.info(f"🚀 Starting evaluation for {model_name} with preset: {preset}")
         
@@ -173,15 +184,18 @@ class LLMEvaluationRunner:
                 results["error"] = "Failed to load model"
                 return results
             
-            # Performance benchmarking
+            # Performance benchmarking using the new module
             logger.info(f"Running performance benchmark for {model_name}...")
-            performance_metrics = self._run_performance_benchmark(model)
+            performance_metrics = self.performance_benchmark.run_benchmark(model)
             results["performance"] = vars(performance_metrics) if performance_metrics else None
             
-            # Real dataset evaluation (unless synthetic-only)
+            # Real dataset evaluation (unless synthetic-only) using new module
             if not getattr(self, '_synthetic_only', False):
                 logger.info(f"Running real dataset evaluation for {model_name}...")
-                dataset_results = self._run_dataset_evaluation(model, preset)
+                dataset_results = self.dataset_evaluator.evaluate_datasets(
+                    model, preset, save_predictions, prediction_count, 
+                    dataset_filter, sample_limit
+                )
                 results["dataset_evaluation"] = dataset_results
             
             # Agent capability evaluation (synthetic tests, unless datasets-only)
@@ -200,7 +214,7 @@ class LLMEvaluationRunner:
                 results["function_calling_test"] = function_results
             
             # Save individual results
-            self._save_individual_results(model_name, results, preset)
+            self.results_manager.save_individual_results(model_name, results, preset)
             
             # Cleanup
             model.unload_model()
@@ -223,112 +237,42 @@ class LLMEvaluationRunner:
         return results
     
     def _create_model_instance(self, model_name: str, model_config: ModelConfig, preset: str = "balanced") -> Optional[BaseModelImplementation]:
-        """Create model instance with enhanced configuration and preset support"""
+        """Create model instance using the model registry"""
+        from models.registry import create_model, list_available_models
+        
         try:
             logger.info(f"Creating {model_name} instance with preset: {preset}")
             
-            if "qwen" in model_name.lower():
-                if "8b" in model_name.lower():
-                    return create_qwen3_8b(preset=preset, cache_dir=self.cache_dir)
-                elif "14b" in model_name.lower():
-                    return create_qwen3_14b(preset=preset, cache_dir=self.cache_dir)
-                else:
-                    logger.warning(f"Unknown Qwen variant: {model_name}")
-                    return None
-            else:
-                # For other models, we'd need to implement their specific loaders
-                logger.warning(f"No specific implementation for {model_name}, skipping")
+            model = create_model(model_name, preset, self.cache_dir)
+            if model is None:
+                available = list_available_models()
+                logger.warning(f"Model {model_name} not found in registry. "
+                             f"Available models: {', '.join(available)}")
                 return None
+            
+            return model
                 
         except Exception as e:
             logger.error(f"Failed to create model instance for {model_name} with preset {preset}: {e}")
             return None
-    
-    def _run_performance_benchmark(self, model: BaseModelImplementation) -> Optional[ModelPerformanceMetrics]:
-        """Run performance benchmark with standard test prompts"""
-        test_prompts = [
-            "Explain the concept of machine learning in simple terms.",
-            "Write a Python function to calculate the factorial of a number.",
-            "What are the main differences between supervised and unsupervised learning?",
-            "Describe the process of photosynthesis step by step.",
-            "How would you design a simple recommendation system?"
-        ]
-        
-        try:
-            return model.benchmark_performance(test_prompts)
-        except Exception as e:
-            logger.error(f"Performance benchmark failed: {e}")
-            return None
-    
-    def _run_dataset_evaluation(self, model: BaseModelImplementation, preset: str = "balanced") -> Dict[str, Any]:
-        """Run evaluation on real datasets"""
-        dataset_results = {
-            "datasets_evaluated": [],
-            "total_samples": 0,
-            "evaluation_time": 0,
-            "results_by_dataset": {},
-            "summary_scores": {}
-        }
-        
-        try:
-            # Get recommended datasets for the model type
-            recommended_datasets = self.dataset_manager.get_recommended_datasets()
-            
-            # Limit datasets based on preset (fewer for quick testing)
-            if preset == "memory_optimized":
-                recommended_datasets = recommended_datasets[:3]  # Just 3 datasets
-            elif preset == "balanced":
-                recommended_datasets = recommended_datasets[:5]  # 5 datasets
-            # Performance preset uses all recommended datasets
-            
-            total_start_time = time.time()
-            
-            for dataset_name in recommended_datasets:
-                logger.info(f"Evaluating on dataset: {dataset_name}")
-                
-                try:
-                    # Load or download dataset
-                    dataset = self.dataset_manager.load_cached_dataset(dataset_name)
-                    if not dataset:
-                        logger.info(f"Downloading {dataset_name}...")
-                        dataset = self.dataset_manager.download_dataset(dataset_name)
-                    
-                    if not dataset or "error" in dataset:
-                        logger.warning(f"Skipping {dataset_name} due to download/load error")
-                        continue
-                    
-                    # Run evaluation on dataset
-                    dataset_result = self._evaluate_on_single_dataset(model, dataset, dataset_name)
-                    dataset_results["results_by_dataset"][dataset_name] = dataset_result
-                    dataset_results["datasets_evaluated"].append(dataset_name)
-                    dataset_results["total_samples"] += dataset_result.get("samples_evaluated", 0)
-                    
-                except Exception as e:
-                    logger.error(f"Failed to evaluate on {dataset_name}: {e}")
-                    dataset_results["results_by_dataset"][dataset_name] = {"error": str(e)}
-            
-            dataset_results["evaluation_time"] = time.time() - total_start_time
-            
-            # Calculate summary scores across all datasets
-            dataset_results["summary_scores"] = self._calculate_summary_scores(
-                dataset_results["results_by_dataset"]
-            )
-            
-        except Exception as e:
-            logger.error(f"Dataset evaluation failed: {e}")
-            dataset_results["error"] = str(e)
-        
-        return dataset_results
+
     
     def _evaluate_on_single_dataset(self, model: BaseModelImplementation, 
-                                   dataset: Dict, dataset_name: str) -> Dict[str, Any]:
+                                   dataset: Dict, dataset_name: str, 
+                                   save_predictions: bool = False,
+                                   prediction_count: Optional[int] = None,
+                                   sample_limit: Optional[int] = None) -> Dict[str, Any]:
         """Evaluate model on a single dataset"""
         samples = dataset.get("samples", [])
         if not samples:
-            return {"error": "No samples in dataset", "samples_evaluated": 0}
+            return {"error": "No samples in dataset", "samples_evaluated": 0}   
         
-        # Limit samples for efficiency (can be configured)
-        max_samples = 100  # Adjust based on dataset size and time constraints
+        # Apply sample limit if specified
+        if sample_limit:
+            max_samples = sample_limit
+        else:
+            max_samples = 100  # Default limit for efficiency
+            
         if len(samples) > max_samples:
             samples = samples[:max_samples]
             logger.info(f"Limited {dataset_name} to {max_samples} samples")
@@ -376,6 +320,51 @@ class LLMEvaluationRunner:
             logger.error(f"Metrics calculation failed for {dataset_name}: {e}")
             metrics_dict = {"error": str(e)}
         
+        # Determine how many predictions to save
+        if save_predictions:
+            if prediction_count is not None:
+                saved_predictions = predictions[:prediction_count]
+            else:
+                saved_predictions = predictions  # Save all
+        else:
+            saved_predictions = predictions[:5]  # Default: first 5 for debugging
+        
+        # Save predictions to file if requested
+        prediction_file = None
+        if save_predictions:
+            timestamp = time.strftime("%Y%m%d_%H%M%S")
+            pred_dir = self.output_dir / "dataset_results"
+            pred_dir.mkdir(exist_ok=True)
+            
+            prediction_file = pred_dir / f"{dataset_name.lower()}_predictions_{timestamp}.json"
+            
+            prediction_data = {
+                "model": model.config.model_name,
+                "dataset": dataset_name,
+                "timestamp": timestamp,
+                "samples_count": len(samples),
+                "successful_predictions": len([p for p in predictions if p.strip()]),
+                "evaluation_time": evaluation_time,
+                "samples": [
+                    {
+                        "id": sample.get("id", i),
+                        "prompt": sample.get("prompt", ""),
+                        "prediction": pred,
+                        "test_cases": sample.get("test_cases", ""),
+                        "expected_output": sample.get("expected_output", "")
+                    }
+                    for i, (sample, pred) in enumerate(zip(samples, saved_predictions))
+                ]
+            }
+            
+            try:
+                with open(prediction_file, 'w') as f:
+                    json.dump(prediction_data, f, indent=2)
+                logger.info(f"Predictions saved to {prediction_file}")
+            except Exception as e:
+                logger.warning(f"Failed to save predictions: {e}")
+                prediction_file = None
+
         return {
             "dataset_name": dataset_name,
             "task_type": dataset["task_type"],
@@ -384,7 +373,8 @@ class LLMEvaluationRunner:
             "evaluation_time_seconds": evaluation_time,
             "avg_time_per_sample": evaluation_time / len(samples) if samples else 0,
             "metrics": metrics_dict,
-            "sample_predictions": predictions[:5],  # First 5 for debugging
+            "sample_predictions": saved_predictions,
+            "prediction_file": str(prediction_file) if prediction_file else None,
         }
     
     def _create_prompt_from_sample(self, sample: Dict, task_type: str) -> str:
@@ -449,98 +439,6 @@ class LLMEvaluationRunner:
             # Generic format
             return sample.get("input", sample.get("prompt", sample.get("question", "")))
     
-    def _calculate_summary_scores(self, dataset_results: Dict[str, Dict]) -> Dict[str, float]:
-        """Calculate summary scores across all evaluated datasets"""
-        summary = {
-            "overall_average": 0.0,
-            "coding_average": 0.0,
-            "reasoning_average": 0.0,
-            "function_calling_average": 0.0,
-            "instruction_following_average": 0.0,
-            "qa_average": 0.0,
-            "datasets_completed": 0,
-            "total_samples": 0
-        }
-        
-        scores_by_type = {
-            "coding": [],
-            "reasoning": [],
-            "function_calling": [],
-            "instruction_following": [],
-            "qa": []
-        }
-        
-        all_scores = []
-        
-        for dataset_name, result in dataset_results.items():
-            if "error" in result:
-                continue
-            
-            summary["datasets_completed"] += 1
-            summary["total_samples"] += result.get("samples_evaluated", 0)
-            
-            task_type = result.get("task_type", "unknown")
-            metrics = result.get("metrics", {})
-            
-            # Extract scores from metrics
-            dataset_scores = []
-            for metric_name, metric_data in metrics.items():
-                if isinstance(metric_data, dict) and "score" in metric_data:
-                    score = metric_data["score"]
-                    dataset_scores.append(score)
-                    all_scores.append(score)
-            
-            # Average score for this dataset
-            if dataset_scores and task_type in scores_by_type:
-                avg_score = sum(dataset_scores) / len(dataset_scores)
-                scores_by_type[task_type].append(avg_score)
-        
-        # Calculate averages by type
-        for task_type, scores in scores_by_type.items():
-            if scores:
-                summary[f"{task_type}_average"] = sum(scores) / len(scores)
-        
-        # Overall average
-        if all_scores:
-            summary["overall_average"] = sum(all_scores) / len(all_scores)
-        
-        return summary
-    
-    def _save_individual_results(self, model_name: str, results: Dict, preset: str = "balanced"):
-        """Save individual model results with preset information"""
-        # Clean model name and include preset for filename clarity
-        safe_name = f"{model_name}_{preset}".replace(" ", "_").replace("/", "_").lower()
-        
-        # Add configuration analysis to results
-        if "config" in results and "model_config" in results["config"]:
-            config_dict = results["config"]["model_config"]
-            # Reconstruct ModelConfig for analysis
-            temp_config = ModelConfig(**{k: v for k, v in config_dict.items() if k in ModelConfig.__dataclass_fields__})
-            memory_est = estimate_memory_usage(temp_config)
-            
-            results["configuration_analysis"] = {
-                "preset": preset,
-                "memory_estimation": memory_est,
-                "optimization_features": {
-                    "prefix_caching": config_dict.get("enable_prefix_caching", False),
-                    "v2_block_manager": config_dict.get("use_v2_block_manager", False),
-                    "quantization": config_dict.get("quantization_method", "none"),
-                    "max_num_seqs": config_dict.get("max_num_seqs", 64),
-                    "gpu_memory_utilization": config_dict.get("gpu_memory_utilization", 0.85)
-                }
-            }
-        
-        # Save detailed results
-        results_file = self.output_dir / "performance" / f"{safe_name}_results.json"
-        with open(results_file, "w") as f:
-            json.dump(results, f, indent=2, default=str)
-        
-        logger.info(f"Results saved to {results_file}")
-    
-    def _save_individual_results_legacy(self, model_name: str, results: Dict):
-        """Legacy method for backward compatibility - extracts preset from results"""
-        preset = results.get("preset", "balanced")
-        self._save_individual_results(model_name, results, preset)
     
     def run_comparison_analysis(self):
         """Run comparative analysis across all evaluated models"""
@@ -563,18 +461,20 @@ class LLMEvaluationRunner:
             logger.warning("No completed results found for comparison")
             return
         
-        # Create comparison report
-        comparison = self._create_comparison_report(all_results)
+        # Create comparison report using ResultsManager
+        comparison = self.results_manager.create_comparison_report(all_results)
         
         # Save comparison
         comparison_file = self.output_dir / "comparisons" / f"comparison_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        comparison_file.parent.mkdir(exist_ok=True)
         with open(comparison_file, "w") as f:
             json.dump(comparison, f, indent=2, default=str)
         
-        # Create summary report
-        self._create_summary_report(comparison)
+        # Create summary report using ResultsManager
+        self.results_manager.create_summary_report(comparison)
         
         logger.info(f"Comparison analysis saved to {comparison_file}")
+
     
     def _create_comparison_report(self, results: List[Dict]) -> Dict:
         """Create detailed comparison report"""
@@ -690,7 +590,10 @@ class LLMEvaluationRunner:
         logger.info(f"Summary report saved to {report_file}")
     
     def run_full_evaluation(self, models_to_test: Optional[List[str]] = None, preset: str = "balanced",
-                           synthetic_only: bool = False, datasets_only: bool = False):
+                           synthetic_only: bool = False, datasets_only: bool = False,
+                           save_predictions: bool = False, prediction_count: Optional[int] = None,
+                           dataset_filter: Optional[List[str]] = None,
+                           sample_limit: Optional[int] = None):
         """Run complete evaluation suite with enhanced configuration support"""
         logger.info(f"🚀 Starting full LLM evaluation suite with preset: {preset}")
         
@@ -728,7 +631,13 @@ class LLMEvaluationRunner:
             logger.info(f"Evaluating: {model_name} (preset: {preset})")
             logger.info(f"{'='*60}")
             
-            result = self.run_individual_evaluation(model_name, model_config, preset)
+            result = self.run_individual_evaluation(
+                model_name, model_config, preset,
+                save_predictions=save_predictions,
+                prediction_count=prediction_count,
+                dataset_filter=dataset_filter,
+                sample_limit=sample_limit
+            )
             # Use preset-aware key for results
             result_key = f"{model_name}_{preset}" if preset != "balanced" else model_name
             self.evaluation_results[result_key] = result
@@ -984,6 +893,16 @@ def main():
     parser.add_argument("--memory-budget", type=int, default=80,
                        help="Available GPU memory in GB (default: 80 for H100)")
     
+    # Prediction saving options
+    parser.add_argument("--save-predictions", action="store_true",
+                       help="Save all model predictions to files for debugging")
+    parser.add_argument("--save-prediction-count", type=int, default=None,
+                       help="Number of predictions to save (default: all if --save-predictions)")
+    parser.add_argument("--datasets", nargs="+", 
+                       help="Specific datasets to evaluate (e.g., HumanEval MBPP)")
+    parser.add_argument("--sample-limit", type=int, default=None,
+                       help="Limit number of samples per dataset for quick testing")
+    
     args = parser.parse_args()
     
     # Create runner
@@ -1020,7 +939,13 @@ def main():
         runner._synthetic_only = args.synthetic_only
         runner._datasets_only = args.datasets_only
         
-        runner.run_individual_evaluation("qwen3_8b", qwen_config, args.preset)
+        runner.run_individual_evaluation(
+            "qwen3_8b", qwen_config, args.preset,
+            save_predictions=args.save_predictions,
+            prediction_count=args.save_prediction_count,
+            dataset_filter=args.datasets,
+            sample_limit=args.sample_limit
+        )
     else:
         # Full evaluation with preset
         models_to_test = None
@@ -1029,7 +954,13 @@ def main():
         elif args.priority_only:
             models_to_test = list(get_high_priority_models().keys())
         
-        runner.run_full_evaluation(models_to_test, args.preset, args.synthetic_only, args.datasets_only)
+        runner.run_full_evaluation(
+            models_to_test, args.preset, args.synthetic_only, args.datasets_only,
+            save_predictions=args.save_predictions,
+            prediction_count=args.save_prediction_count,
+            dataset_filter=args.datasets,
+            sample_limit=args.sample_limit
+        )
 
 if __name__ == "__main__":
     main()
