@@ -190,19 +190,19 @@ MODEL_CONFIGS = {
     
     "qwen3_14b": ModelConfig(
         model_name="Qwen-3 14B Instruct", 
-        huggingface_id="Qwen/Qwen2.5-14B-Instruct",
+        huggingface_id="Qwen/Qwen2.5-14B-Instruct-AWQ",  # Use official AWQ model
         license="Apache 2.0",
         size_gb=14.0,
         context_window=128000,
         preset="balanced",
-        quantization_method="none",  # AWQ not available, using fp16
+        quantization_method="awq",  # AWQ quantization enabled
         max_model_len=24576,  # Slightly reduced for 14B
-        gpu_memory_utilization=0.70,  # Reduced for unquantized model
+        gpu_memory_utilization=0.80,  # Increased back for quantized model
         priority="HIGH",
         agent_optimized=True,
         agent_temperature=0.1,
         max_function_calls_per_turn=5,
-        evaluation_batch_size=4  # Smaller batch for larger unquantized model
+        evaluation_batch_size=6  # Restored batch size for quantized model
     ),
     
     "deepseek_coder_16b": ModelConfig(
