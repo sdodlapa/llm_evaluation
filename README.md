@@ -5,10 +5,11 @@ A comprehensive, scalable framework for evaluating Large Language Models across 
 ## ✨ Key Features
 
 - **22+ Models**: Complete Qwen series + strategic alternatives (Llama, Phi, DeepSeek)
-- **12 Datasets**: Coding, reasoning, QA, function calling, instruction following
+- **26 Datasets**: Coding, mathematics, multimodal, genomics, efficiency, reasoning, QA, function calling, instruction following
 - **Real-time Monitoring**: GPU utilization, memory usage, throughput tracking
 - **Specialized Models**: Math, coding, genomics, efficiency-optimized variants
 - **Clean Architecture**: Consolidated, maintainable, scalable structure
+- **Smart Recommendations**: Enhanced dataset selection system
 
 ## 🚀 Quick Start
 
@@ -41,13 +42,44 @@ python evaluation/run_evaluation.py --model qwen3_coder_30b --dataset humaneval
 python evaluation/run_evaluation.py --model qwen25_0_5b,qwen25_3b --dataset humaneval
 ```
 
+### 4. Dataset Summary
+```bash
+# View all datasets
+python show_datasets.py
+
+# View specific category
+python show_datasets.py coding
+python show_datasets.py mathematics
+python show_datasets.py multimodal
+```
+
+## 📊 Dataset Overview
+
+**26 Total Datasets** across 9 categories with **614,397+ evaluation samples**
+
+- **📋 Complete Catalog**: See [DATASET_SUMMARY_TABLE.md](DATASET_SUMMARY_TABLE.md)
+- **🔢 7 Ready Datasets**: 13,777 samples available immediately
+- **⏳ 19 Pending Datasets**: 600,620 samples (infrastructure ready)
+
+| Category | Datasets | Ready | Samples |
+|----------|----------|-------|---------|
+| **Coding** | 5 | 3 | 19,664 |
+| **Mathematics** | 3 | 0 | 37,577 |
+| **Multimodal** | 3 | 0 | 481,234 |
+| **Reasoning** | 4 | 2 | 18,128 |
+| **Genomics** | 3 | 0 | 34,000 |
+| **Function Calling** | 2 | 0 | 5,000 |
+| **QA** | 2 | 1 | 15,214 |
+| **Instruction Following** | 2 | 1 | 580 |
+| **Efficiency** | 2 | 0 | 3,000 |
+
 ## 📁 Project Structure
 
 ```
 llm_evaluation/
 ├── 📁 evaluation/              # Core evaluation system
 │   ├── run_evaluation.py       # Main entry point
-│   ├── dataset_manager.py      # Dataset handling (12 datasets)
+│   ├── dataset_manager.py      # Dataset handling (26 datasets)
 │   ├── performance_monitor.py  # Real-time monitoring
 │   ├── comprehensive_runner.py # Advanced evaluation orchestrator
 │   └── metrics.py             # Evaluation metrics
@@ -83,23 +115,40 @@ python evaluation/run_evaluation.py --datasets humaneval,mbpp --sample-limit 50
 
 ## 📚 Evaluation Datasets
 
-### Coding & Programming
-- **HumanEval**: 164 hand-written programming problems
-- **MBPP**: 974 mostly basic Python programming tasks
-- **CodeT5**: Multi-language code understanding and generation
+**26 Comprehensive Datasets** - See [DATASET_SUMMARY_TABLE.md](DATASET_SUMMARY_TABLE.md) for complete details
 
-### Reasoning & Problem Solving
-- **GSM8K**: 1,319 grade school math word problems
+### ✅ Ready for Evaluation (7 datasets)
+- **HumanEval**: 164 Python programming problems
+- **MBPP**: 500 Python programming tasks  
+- **BigCodeBench**: 500 comprehensive coding challenges
+- **GSM8K**: 1,319 grade school math problems
 - **ARC-Challenge**: 1,172 science reasoning questions
 - **HellaSwag**: 10,042 commonsense reasoning scenarios
+- **MT-Bench**: 80 multi-turn conversation evaluations
 
-### Function Calling & Agents
-- **BFCL**: Berkeley Function Calling Leaderboard
-- **ToolLLaMA**: Multi-tool coordination and usage
+### 🔄 Implementation Ready (19 datasets)
+**Coding**: CodeContests, APPS  
+**Mathematics**: MATH Competition, MathQA, AIME  
+**Multimodal**: ScienceQA, VQA v2.0, ChartQA  
+**Genomics**: Genomics Benchmark, Protein Sequences, BioASQ  
+**Function Calling**: BFCL, ToolLLaMA  
+**Efficiency**: Efficiency Bench, Mobile Benchmark  
+**QA/Reasoning**: MMLU, Math, Winogrande, IFEval  
 
-### Instruction Following
-- **AlpacaEval**: 805 instruction-following evaluations
-- **MT-Bench**: 160 multi-turn conversation scenarios
+### 🎯 Usage Examples
+```bash
+# All ready datasets
+python show_datasets.py
+
+# Category-specific
+python show_datasets.py coding
+python show_datasets.py mathematics
+
+# Smart recommendations
+from evaluation.dataset_manager import EnhancedDatasetManager
+dm = EnhancedDatasetManager()
+recommended = dm.get_recommended_datasets()
+```
 
 ## ⚙️ Configuration Presets
 

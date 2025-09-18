@@ -187,10 +187,31 @@ class LLMEvaluationRunner:
                 results["error"] = "Failed to load model"
                 return results
             
-            # Performance benchmarking using the new module
+            # Start performance monitoring
             logger.info(f"Running performance benchmark for {model_name}...")
-            performance_metrics = self.performance_benchmark.run_benchmark(model)
-            results["performance"] = vars(performance_metrics) if performance_metrics else None
+            self.performance_monitor.start_monitoring(model_name, preset, "performance_test")
+            
+            # Run a simple performance test
+            try:
+                test_prompt = "Write a simple function to calculate the factorial of a number."
+                start_time = time.time()
+                response = model.generate_response(test_prompt, max_tokens=100, temperature=0.1)
+                end_time = time.time()
+                
+                # Record performance metrics
+                self.performance_monitor.record_tokens_processed(len(test_prompt.split()) + 100)  # Approximate
+                self.performance_monitor.record_request_timing(start_time, end_time)
+                
+                # Stop monitoring and get metrics
+                performance_metrics = self.performance_monitor.stop_monitoring(
+                    dataset_samples_processed=1,
+                    accuracy_metrics={"completion_success": 1.0 if response else 0.0}
+                )
+                results["performance"] = vars(performance_metrics) if performance_metrics else None
+                
+            except Exception as e:
+                logger.warning(f"Performance benchmark failed: {e}")
+                results["performance"] = {"error": str(e)}
             
             # Real dataset evaluation (unless synthetic-only) using new module
             if not getattr(self, '_synthetic_only', False):

@@ -54,6 +54,35 @@ class EnhancedDatasetManager:
                 evaluation_type="code_execution",
                 description="Python code generation from docstrings"
             ),
+            "bigcodebench": DatasetInfo(
+                name="bigcodebench",
+                task_type="coding",
+                data_path="coding/bigcodebench.json",
+                metadata_path="meta/bigcodebench_metadata.json",
+                sample_count=500,
+                evaluation_type="code_execution",
+                description="Big Code Bench - comprehensive coding benchmark"
+            ),
+            "codecontests": DatasetInfo(
+                name="codecontests",
+                task_type="coding",
+                data_path="coding/codecontests.json",
+                metadata_path="meta/codecontests_metadata.json",
+                sample_count=13500,
+                evaluation_type="code_execution",
+                description="Programming contest problems from competitive programming",
+                implemented=False
+            ),
+            "apps": DatasetInfo(
+                name="apps",
+                task_type="coding",
+                data_path="coding/apps.json",
+                metadata_path="meta/apps_metadata.json",
+                sample_count=5000,
+                evaluation_type="code_execution",
+                description="Measuring coding challenge competence with 10,000 problems",
+                implemented=False
+            ),
             
             # Mathematical Reasoning
             "gsm8k": DatasetInfo(
@@ -73,6 +102,36 @@ class EnhancedDatasetManager:
                 sample_count=5000,
                 evaluation_type="numerical_accuracy",
                 description="Mathematical competition problems",
+                implemented=False
+            ),
+            "math_competition": DatasetInfo(
+                name="math_competition",
+                task_type="mathematics",
+                data_path="mathematics/math_competition.json",
+                metadata_path="meta/math_competition_metadata.json",
+                sample_count=7500,
+                evaluation_type="numerical_accuracy",
+                description="MATH dataset - Competition mathematics problems",
+                implemented=False
+            ),
+            "mathqa": DatasetInfo(
+                name="mathqa",
+                task_type="mathematics",
+                data_path="mathematics/mathqa.json",
+                metadata_path="meta/mathqa_metadata.json",
+                sample_count=29837,
+                evaluation_type="numerical_accuracy",
+                description="Math word problems with operation programs",
+                implemented=False
+            ),
+            "aime": DatasetInfo(
+                name="aime",
+                task_type="mathematics",
+                data_path="mathematics/aime.json",
+                metadata_path="meta/aime_metadata.json",
+                sample_count=240,
+                evaluation_type="numerical_accuracy",
+                description="American Invitational Mathematics Examination problems",
                 implemented=False
             ),
             
@@ -162,6 +221,92 @@ class EnhancedDatasetManager:
                 evaluation_type="multiple_choice_accuracy",
                 description="Commonsense reasoning with pronoun resolution",
                 implemented=False
+            ),
+            
+            # Multimodal Datasets  
+            "scienceqa": DatasetInfo(
+                name="scienceqa",
+                task_type="multimodal",
+                data_path="multimodal/scienceqa.json",
+                metadata_path="meta/scienceqa_metadata.json",
+                sample_count=19206,
+                evaluation_type="multiple_choice_accuracy",
+                description="Science question answering with images and text",
+                implemented=False
+            ),
+            "vqa_v2": DatasetInfo(
+                name="vqa_v2",
+                task_type="multimodal",
+                data_path="multimodal/vqa_v2.json",
+                metadata_path="meta/vqa_v2_metadata.json",
+                sample_count=443757,
+                evaluation_type="free_form_accuracy",
+                description="Visual Question Answering dataset v2.0",
+                implemented=False
+            ),
+            "chartqa": DatasetInfo(
+                name="chartqa",
+                task_type="multimodal",
+                data_path="multimodal/chartqa.json",
+                metadata_path="meta/chartqa_metadata.json",
+                sample_count=18271,
+                evaluation_type="free_form_accuracy",
+                description="Question answering on charts and graphs",
+                implemented=False
+            ),
+            
+            # Genomics/Bioinformatics Datasets
+            "genomics_benchmark": DatasetInfo(
+                name="genomics_benchmark",
+                task_type="genomics",
+                data_path="genomics/genomics_benchmark.json",
+                metadata_path="meta/genomics_benchmark_metadata.json",
+                sample_count=6000,
+                evaluation_type="sequence_classification",
+                description="Long-range genomics benchmark for sequence analysis",
+                implemented=False
+            ),
+            "protein_sequences": DatasetInfo(
+                name="protein_sequences",
+                task_type="genomics",
+                data_path="genomics/protein_sequences.json",
+                metadata_path="meta/protein_sequences_metadata.json",
+                sample_count=25000,
+                evaluation_type="sequence_classification",
+                description="Protein sequence and structure prediction dataset",
+                implemented=False
+            ),
+            "bioasq": DatasetInfo(
+                name="bioasq",
+                task_type="genomics",
+                data_path="genomics/bioasq.json",
+                metadata_path="meta/bioasq_metadata.json",
+                sample_count=3000,
+                evaluation_type="qa_accuracy",
+                description="Biomedical semantic indexing and question answering",
+                implemented=False
+            ),
+            
+            # Efficiency Datasets
+            "efficiency_bench": DatasetInfo(
+                name="efficiency_bench",
+                task_type="efficiency",
+                data_path="efficiency/efficiency_bench.json",
+                metadata_path="meta/efficiency_bench_metadata.json",
+                sample_count=1000,
+                evaluation_type="speed_accuracy_tradeoff",
+                description="Efficiency benchmarking with latency constraints",
+                implemented=False
+            ),
+            "mobile_benchmark": DatasetInfo(
+                name="mobile_benchmark",
+                task_type="efficiency",
+                data_path="efficiency/mobile_benchmark.json",
+                metadata_path="meta/mobile_benchmark_metadata.json",
+                sample_count=2000,
+                evaluation_type="resource_efficiency",
+                description="Mobile device efficiency evaluation tasks",
+                implemented=False
             )
         }
     
@@ -176,6 +321,51 @@ class EnhancedDatasetManager:
     def get_unimplemented_datasets(self) -> List[str]:
         """Get list of datasets that need implementation"""
         return [name for name, info in self.datasets.items() if not info.implemented]
+    
+    def get_recommended_datasets(self, task_types: Optional[List[str]] = None, 
+                               include_experimental: bool = True) -> List[str]:
+        """Get recommended datasets for evaluation based on task types and availability
+        
+        Args:
+            task_types: List of task types to focus on. If None, includes all major categories
+            include_experimental: Whether to include datasets marked as not fully implemented
+        
+        Returns:
+            List of dataset names recommended for evaluation
+        """
+        if task_types is None:
+            # Default: comprehensive evaluation across all capabilities
+            task_types = ["coding", "reasoning", "qa", "instruction_following", "function_calling"]
+        
+        recommended = []
+        
+        # Priority datasets by task type
+        task_priorities = {
+            "coding": ["humaneval", "mbpp", "bigcodebench"],  # All implemented
+            "reasoning": ["gsm8k", "arc_challenge", "hellaswag", "math"],  # math needs verification
+            "qa": ["mmlu"],  # May need implementation check
+            "instruction_following": ["mt_bench", "ifeval"],  # ifeval needs verification  
+            "function_calling": ["bfcl", "toolllama"]  # Both need verification
+        }
+        
+        # Add datasets based on requested task types
+        for task_type in task_types:
+            if task_type in task_priorities:
+                for dataset in task_priorities[task_type]:
+                    if dataset in self.datasets:
+                        dataset_info = self.datasets[dataset]
+                        # Include if implemented OR if experimental datasets allowed
+                        if dataset_info.implemented or include_experimental:
+                            if dataset not in recommended:
+                                recommended.append(dataset)
+        
+        # Always include core evaluation datasets regardless of task type
+        core_datasets = ["humaneval", "gsm8k", "mt_bench"]
+        for dataset in core_datasets:
+            if dataset in self.datasets and dataset not in recommended:
+                recommended.append(dataset)
+        
+        return recommended
     
     def get_dataset_info(self, dataset_name: str) -> DatasetInfo:
         """Get detailed information about a dataset"""

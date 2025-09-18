@@ -48,8 +48,14 @@ class DatasetEvaluator:
         start_time = time.time()
         
         # Determine which datasets to evaluate
-        available_datasets = self.dataset_manager.get_recommended_datasets()
-        datasets_to_eval = dataset_filter if dataset_filter else available_datasets
+        if dataset_filter:
+            # Use specific datasets requested
+            available_datasets = dataset_filter
+        else:
+            # Use recommended datasets (includes both implemented and promising experimental ones)
+            available_datasets = self.dataset_manager.get_recommended_datasets(include_experimental=True)
+        
+        datasets_to_eval = available_datasets
         
         logger.info(f"Available datasets: {available_datasets}")
         logger.info(f"Will evaluate datasets: {datasets_to_eval}")
@@ -67,6 +73,25 @@ class DatasetEvaluator:
                     dataset_results["results_by_dataset"][dataset_name] = result
                     dataset_results["datasets_evaluated"].append(dataset_name)
                     total_samples += result.get("samples_evaluated", 0)
+                    
+            except NotImplementedError as e:
+                logger.warning(f"Dataset {dataset_name} not yet implemented: {e}")
+                dataset_results["results_by_dataset"][dataset_name] = {
+                    "status": "not_implemented", 
+                    "error": str(e)
+                }
+            except FileNotFoundError as e:
+                logger.warning(f"Dataset {dataset_name} data file not found: {e}")
+                dataset_results["results_by_dataset"][dataset_name] = {
+                    "status": "missing_data", 
+                    "error": str(e)
+                }
+            except Exception as e:
+                logger.error(f"Failed to evaluate dataset {dataset_name}: {e}")
+                dataset_results["results_by_dataset"][dataset_name] = {
+                    "status": "failed", 
+                    "error": str(e)
+                }
                     
             except Exception as e:
                 logger.error(f"Failed to evaluate on {dataset_name}: {e}")
@@ -93,16 +118,13 @@ class DatasetEvaluator:
                                    sample_limit: Optional[int] = None) -> Optional[Dict]:
         """Evaluate model on a single dataset"""
         try:
-            # Load dataset - try cached first, then download
-            dataset = self.dataset_manager.load_cached_dataset(dataset_name)
-            if not dataset:
-                logger.info(f"Dataset {dataset_name} not cached, downloading...")
-                dataset = self.dataset_manager.download_dataset(dataset_name)
-            if not dataset:
+            # Load dataset
+            dataset_samples = self.dataset_manager.load_dataset(dataset_name, num_samples=sample_limit)
+            if not dataset_samples:
                 raise ValueError(f"Unknown dataset: {dataset_name}")
             
-            # Extract samples from dataset 
-            samples = dataset.get("samples", [])
+            # Dataset samples are already in the correct format
+            samples = dataset_samples
             if not samples:
                 logger.error(f"No samples found in dataset: {dataset_name}")
                 return {"error": "No samples in dataset", "samples_evaluated": 0}
@@ -117,8 +139,12 @@ class DatasetEvaluator:
                 samples = samples[:max_samples]
                 logger.info(f"Limited {dataset_name} to {max_samples} samples")
             
-            # Determine task type
-            task_type = dataset.get("task_type", "unknown")
+            # Determine task type from dataset info
+            try:
+                dataset_info = self.dataset_manager.get_dataset_info(dataset_name)
+                task_type = dataset_info.task_type
+            except:
+                task_type = "unknown"
             
             # Generate predictions
             predictions = []
