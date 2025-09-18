@@ -307,6 +307,86 @@ class EnhancedDatasetManager:
                 evaluation_type="resource_efficiency",
                 description="Mobile device efficiency evaluation tasks",
                 implemented=False
+            ),
+            
+            # === SCIENTIFIC & BIOMEDICAL DATASETS ===
+            
+            # Biomedical Datasets
+            "pubmedqa": DatasetInfo(
+                name="pubmedqa",
+                task_type="biomedical_qa",
+                data_path="biomedical/pubmedqa.json",
+                metadata_path="meta/pubmedqa_metadata.json",
+                sample_count=1000,
+                evaluation_type="qa_accuracy",
+                description="Biomedical question answering from PubMed abstracts",
+                implemented=True
+            ),
+            "bioasq": DatasetInfo(
+                name="bioasq",
+                task_type="biomedical_qa",
+                data_path="biomedical/bioasq.json",
+                metadata_path="meta/bioasq_metadata.json",
+                sample_count=3000,
+                evaluation_type="qa_accuracy",
+                description="Biomedical semantic indexing and question answering",
+                implemented=True
+            ),
+            "mediqa": DatasetInfo(
+                name="mediqa",
+                task_type="clinical_qa",
+                data_path="biomedical/mediqa.json",
+                metadata_path="meta/mediqa_metadata.json",
+                sample_count=1000,
+                evaluation_type="clinical_accuracy",
+                description="Medical question answering and summarization",
+                implemented=True
+            ),
+            
+            # Scientific Datasets
+            "scientific_papers": DatasetInfo(
+                name="scientific_papers",
+                task_type="scientific_summarization",
+                data_path="scientific/scientific_papers.json",
+                metadata_path="meta/scientific_papers_metadata.json",
+                sample_count=5001,
+                evaluation_type="summarization_quality",
+                description="ArXiv and PubMed papers for summarization tasks",
+                implemented=True
+            ),
+            "scierc": DatasetInfo(
+                name="scierc",
+                task_type="scientific_ner",
+                data_path="scientific/scierc.json",
+                metadata_path="meta/scierc_metadata.json",
+                sample_count=501,
+                evaluation_type="entity_extraction_f1",
+                description="Scientific entity and relation extraction",
+                implemented=True
+            ),
+            
+            # Document Understanding Datasets
+            "docvqa": DatasetInfo(
+                name="docvqa",
+                task_type="document_vqa",
+                data_path="document/docvqa.json",
+                metadata_path="meta/docvqa_metadata.json",
+                sample_count=5000,
+                evaluation_type="vqa_accuracy",
+                description="Document visual question answering",
+                implemented=True
+            ),
+            
+            # Safety & Alignment Datasets
+            "toxicity_detection": DatasetInfo(
+                name="toxicity_detection",
+                task_type="safety_classification",
+                data_path="safety/toxicity_detection.json",
+                metadata_path="meta/toxicity_detection_metadata.json",
+                sample_count=1002,
+                evaluation_type="classification_accuracy",
+                description="Toxicity and harmful content detection",
+                implemented=True
             )
         }
     
