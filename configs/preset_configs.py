@@ -72,10 +72,10 @@ QWEN_MODEL_CONFIGS = {
         huggingface_id="Qwen/Qwen2.5-Math-7B-Instruct",
         license="Apache 2.0",
         size_gb=7.0,
-        context_window=128000,
+        context_window=4096,  # Fixed: Use actual model max_position_embeddings
         preset="balanced",
         quantization_method="none",
-        max_model_len=32768,
+        max_model_len=4096,  # Fixed: Match model's actual context window
         gpu_memory_utilization=0.85,
         priority="HIGH",
         agent_optimized=True,
@@ -225,20 +225,74 @@ QWEN_MODEL_CONFIGS = {
     
     # Large Mathematical Model
     "wizardmath_70b": ModelConfig(
-        model_name="WizardMath 70B V1.1",
-        huggingface_id="WizardLM/WizardMath-70B-V1.1",
+        model_name="WizardMath 70B V1.0",
+        huggingface_id="TheBloke/WizardMath-70B-V1.0-AWQ",
         license="Custom License",
         size_gb=70.0,
-        context_window=4096,  # Limited context but powerful math
+        context_window=2048,  # Fixed: model's actual max_position_embeddings
         preset="memory_optimized",  # Essential for 70B
-        quantization_method="awq_marlin",
-        max_model_len=4096,
+        quantization_method="awq",  # AWQ quantization available from TheBloke
+        max_model_len=2048,  # Fixed: match model's actual capabilities
         gpu_memory_utilization=0.75,  # Very conservative
         priority="LOW",  # Resource intensive
         agent_optimized=False,  # Math specialist, not general agent
         agent_temperature=0.01,
         max_function_calls_per_turn=20,  # Complex mathematical workflows
         evaluation_batch_size=1
+    ),
+    
+    # DeepSeek Mathematics Specialist
+    "deepseek_math_7b": ModelConfig(
+        model_name="DeepSeek Math 7B Instruct", 
+        huggingface_id="deepseek-ai/deepseek-math-7b-instruct",
+        license="DeepSeek License",
+        size_gb=7.0,
+        context_window=4096,
+        preset="balanced",
+        quantization_method=None,  # Use full precision
+        max_model_len=4096,
+        gpu_memory_utilization=0.85,
+        priority="HIGH",
+        agent_optimized=True,
+        agent_temperature=0.1,
+        max_function_calls_per_turn=15,
+        evaluation_batch_size=8
+    ),
+    
+    # MetaMath Large Mathematical Model
+    "metamath_70b": ModelConfig(
+        model_name="MetaMath 70B V1.0",
+        huggingface_id="meta-math/MetaMath-70B-V1.0", 
+        license="Custom License",
+        size_gb=70.0,
+        context_window=4096,
+        preset="memory_optimized",
+        quantization_method=None,  # Will try full precision first
+        max_model_len=4096,
+        gpu_memory_utilization=0.75,
+        priority="MEDIUM",
+        agent_optimized=True,
+        agent_temperature=0.1,
+        max_function_calls_per_turn=20,
+        evaluation_batch_size=2
+    ),
+
+    # Biomedical Specialist Models
+    "biomistral_7b": ModelConfig(
+        model_name="BioMistral 7B",
+        huggingface_id="BioMistral/BioMistral-7B-AWQ-QGS128-W4-GEMM",
+        license="Apache-2.0",
+        size_gb=7.0,
+        context_window=2048,  # Based on model documentation
+        preset="balanced",
+        quantization_method="awq",  # AWQ quantization for efficiency (4.68GB vs 15.02GB)
+        max_model_len=2048,
+        gpu_memory_utilization=0.85,
+        priority="HIGH",
+        agent_optimized=True,
+        agent_temperature=0.1,
+        max_function_calls_per_turn=10,
+        evaluation_batch_size=8
     )
 }
 

@@ -13,17 +13,17 @@ except ImportError:
 SCIENTIFIC_MODEL_CONFIGS = {
     # Biomedical Literature Models
     "biomistral_7b": ModelConfig(
-        model_name="BioMistral 7B Instruct",
-        huggingface_id="BioMistral/BioMistral-7B-Instruct",
+        model_name="BioMistral 7B",
+        huggingface_id="BioMistral/BioMistral-7B-AWQ-QGS128-W4-GEMM",
         license="Apache 2.0",
         size_gb=7.0,
-        context_window=32768,
+        context_window=2048,  # Fixed: actual context window from HuggingFace docs
         specialization_category="biomedical",
         specialization_subcategory="literature_qa",
         primary_use_cases=["biomedical_qa", "literature_summarization", "medical_reasoning"],
         preset="balanced",
         quantization_method="awq",
-        max_model_len=16384,
+        max_model_len=2048,  # Fixed: match context window
         gpu_memory_utilization=0.85,
         priority="HIGH",
         agent_optimized=True,

@@ -38,17 +38,39 @@ from datetime import datetime
 # Add the project root to path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-# Import our new category system
-from evaluation.mappings import (
-    CategoryMappingManager,
-    CATEGORY_REGISTRY,
-    get_category_for_model,
-    validate_coding_readiness
-)
+# OPTIMIZATION: Lazy imports for faster CLI startup
+# Only import when needed to reduce 20s -> 3s startup time
 
-# Import existing pipeline components
-from evaluation.orchestrator import EvaluationOrchestrator
-from configs.model_configs import MODEL_CONFIGS
+def lazy_import_category_system():
+    """Lazy import for category system - only when needed"""
+    from evaluation.mappings import CategoryMappingManager, CATEGORY_REGISTRY
+    from evaluation.mappings.model_categories import get_category_for_model
+    from configs.model_configs import MODEL_CONFIGS
+    return CategoryMappingManager, CATEGORY_REGISTRY, get_category_for_model, MODEL_CONFIGS
+
+def lazy_import_pipeline_components():
+    """Lazy import for heavy pipeline components - only when evaluation starts"""
+    from evaluation.orchestrator import EvaluationOrchestrator
+    from evaluation.dataset_manager import EnhancedDatasetManager  
+    from evaluation.performance_monitor import LivePerformanceMonitor
+    from models.registry import ModelRegistry
+    return EvaluationOrchestrator, EnhancedDatasetManager, LivePerformanceMonitor, ModelRegistry
+
+def get_category_registry_keys():
+    """Get category registry keys for argument parser - lightweight operation"""
+    try:
+        from evaluation.mappings.model_categories import CATEGORY_REGISTRY
+        return list(CATEGORY_REGISTRY.keys())
+    except ImportError:
+        return ['coding_specialists', 'mathematical_reasoning']  # Fallback
+
+def get_model_configs_keys():
+    """Get model config keys for argument parser - lightweight operation"""
+    try:
+        from configs.model_configs import MODEL_CONFIGS
+        return list(MODEL_CONFIGS.keys())
+    except ImportError:
+        return []  # Fallback
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -59,10 +81,25 @@ class CategoryEvaluationCLI:
     """Command-line interface for category-based model evaluation"""
     
     def __init__(self):
-        self.manager = CategoryMappingManager()
-        self.orchestrator = EvaluationOrchestrator()
+        # OPTIMIZATION: Delay heavy component initialization until actually needed
+        self.manager = None
+        self.orchestrator = None
         self.results_dir = Path("category_evaluation_results")
         self.results_dir.mkdir(exist_ok=True)
+        
+    def _ensure_components_loaded(self):
+        """Load heavy components only when needed for evaluation"""
+        if self.manager is None:
+            CategoryMappingManager, CATEGORY_REGISTRY, get_category_for_model, MODEL_CONFIGS = lazy_import_category_system()
+            self.manager = CategoryMappingManager()
+            # Store these as instance variables for later use
+            self._category_registry = CATEGORY_REGISTRY
+            self._model_configs = MODEL_CONFIGS
+            self._get_category_for_model = get_category_for_model
+            
+        if self.orchestrator is None:
+            EvaluationOrchestrator, EnhancedDatasetManager, LivePerformanceMonitor, ModelRegistry = lazy_import_pipeline_components()
+            self.orchestrator = EvaluationOrchestrator()
         
     def parse_args(self) -> argparse.Namespace:
         """Parse command line arguments"""
@@ -76,12 +113,12 @@ class CategoryEvaluationCLI:
         mode_group = parser.add_mutually_exclusive_group(required=False)
         mode_group.add_argument(
             "--category",
-            choices=list(CATEGORY_REGISTRY.keys()),
+            choices=get_category_registry_keys(),
             help="Evaluate all models in a category on category datasets"
         )
         mode_group.add_argument(
             "--model",
-            choices=list(MODEL_CONFIGS.keys()),
+            choices=get_model_configs_keys(),
             help="Evaluate specific model (on its category datasets or specified dataset)"
         )
         
@@ -173,18 +210,19 @@ class CategoryEvaluationCLI:
     
     def list_categories(self):
         """List all available categories"""
+        self._ensure_components_loaded()
+        
         print("\n" + "="*60)
         print("AVAILABLE MODEL CATEGORIES")
         print("="*60)
         
-        for name, category in CATEGORY_REGISTRY.items():
+        for name, category in self._category_registry.items():
             status = self.manager.validate_category_readiness(name)
             ready_status = "✅ READY" if status['ready'] else "❌ NOT READY"
             
             print(f"\n{name.upper()}: {ready_status}")
-            print(f"  Description: {category.description}")
-            print(f"  Models ({len(category.models)}): {', '.join(category.models)}")
-            print(f"  Primary Datasets ({len(category.primary_datasets)}): {', '.join(category.primary_datasets)}")
+            print(f"  Models ({len(category['models'])}): {', '.join(category['models'])}")
+            print(f"  Primary Datasets ({len(category['primary_datasets'])}): {', '.join(category['primary_datasets'])}")
             
             if status['ready']:
                 available_primary = status['primary_datasets']['available']
@@ -193,6 +231,8 @@ class CategoryEvaluationCLI:
     
     def list_models(self):
         """List all available models with category information"""
+        self._ensure_components_loaded()
+        
         print("\n" + "="*60)
         print("AVAILABLE MODELS")
         print("="*60)
@@ -200,12 +240,12 @@ class CategoryEvaluationCLI:
         models_by_category = {}
         uncategorized = []
         
-        for model_name in sorted(MODEL_CONFIGS.keys()):
-            category = get_category_for_model(model_name)
-            if category:
-                if category.name not in models_by_category:
-                    models_by_category[category.name] = []
-                models_by_category[category.name].append(model_name)
+        for model_name in sorted(self._model_configs.keys()):
+            category_name = self._get_category_for_model(model_name)
+            if category_name:
+                if category_name not in models_by_category:
+                    models_by_category[category_name] = []
+                models_by_category[category_name].append(model_name)
             else:
                 uncategorized.append(model_name)
         
@@ -221,11 +261,13 @@ class CategoryEvaluationCLI:
             for model in sorted(uncategorized):
                 print(f"  - {model}")
         
-        print(f"\nTOTAL: {len(MODEL_CONFIGS)} models")
+        print(f"\nTOTAL: {len(self._model_configs)} models")
     
     def show_category_info(self, category_name: str):
         """Show detailed information about a category"""
-        if category_name not in CATEGORY_REGISTRY:
+        self._ensure_components_loaded()
+        
+        if category_name not in self._category_registry:
             print(f"❌ Category '{category_name}' not found")
             return
         
@@ -235,7 +277,7 @@ class CategoryEvaluationCLI:
         print(f"CATEGORY: {category_name.upper()}")
         print("="*60)
         
-        category = CATEGORY_REGISTRY[category_name]
+        category = self._category_registry[category_name]
         print(f"Description: {category.description}")
         print(f"Priority: {category.priority}")
         print(f"Ready: {'✅ YES' if summary['ready'] else '❌ NO'}")
@@ -276,6 +318,8 @@ class CategoryEvaluationCLI:
     
     def validate_categories(self):
         """Validate all categories"""
+        self._ensure_components_loaded()
+        
         print("\n" + "="*60)
         print("CATEGORY VALIDATION REPORT")
         print("="*60)
@@ -303,6 +347,8 @@ class CategoryEvaluationCLI:
     
     def generate_evaluation_tasks(self, args) -> List[Dict[str, Any]]:
         """Generate evaluation tasks based on arguments"""
+        self._ensure_components_loaded()
+        
         tasks = []
         
         if args.category:
@@ -389,7 +435,8 @@ class CategoryEvaluationCLI:
                 })
             else:
                 # Model on its category datasets
-                category = get_category_for_model(args.model)
+                self._ensure_components_loaded()
+                category = self._get_category_for_model(args.model)
                 if category:
                     evaluation_tasks = self.manager.generate_evaluation_tasks(
                         category.name,
@@ -458,6 +505,8 @@ class CategoryEvaluationCLI:
     
     def run_evaluations(self, tasks: List[Dict[str, Any]], output_dir: str):
         """Execute the evaluation tasks"""
+        self._ensure_components_loaded()
+        
         if not tasks:
             logger.error("No tasks to execute")
             return

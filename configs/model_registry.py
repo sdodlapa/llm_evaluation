@@ -340,6 +340,309 @@ MODEL_CONFIGS = {
         context_window=200000,
         priority="LOW",
         agent_optimized=True
+    ),
+    
+    # Mathematical Reasoning Models
+    "qwen25_math_7b": ModelConfig(
+        model_name="Qwen2.5-Math 7B Instruct",
+        huggingface_id="Qwen/Qwen2.5-Math-7B-Instruct",
+        license="Apache 2.0",
+        size_gb=7.5,
+        context_window=4096,  # Fixed: Use actual model max_position_embeddings
+        preset="balanced",
+        specialization_category="mathematics",
+        specialization_subcategory="mathematical_reasoning",
+        primary_use_cases=["mathematical_problems", "arithmetic", "algebra", "calculus"],
+        quantization_method="none",
+        max_model_len=4096,  # Fixed: Match model's actual context window
+        gpu_memory_utilization=0.85,
+        priority="HIGH",
+        agent_optimized=True,
+        agent_temperature=0.1,
+        max_function_calls_per_turn=3,
+        evaluation_batch_size=8
+    ),
+    
+    "wizardmath_70b": ModelConfig(
+        model_name="WizardMath 70B V1.0",
+        huggingface_id="TheBloke/WizardMath-70B-V1.0-AWQ",  # Correct AWQ quantized version
+        license="Llama 2 License",
+        size_gb=70.0,
+        context_window=2048,  # Fixed: model's actual max_position_embeddings
+        preset="performance", 
+        specialization_category="mathematics",
+        specialization_subcategory="advanced_mathematical_reasoning",
+        primary_use_cases=["complex_math", "mathematical_proofs", "problem_solving"],
+        quantization_method="awq",  # AWQ quantization available from TheBloke
+        max_model_len=2048,  # Fixed: match model's actual capabilities
+        gpu_memory_utilization=0.95,  # Higher for large model
+        priority="HIGH",
+        agent_optimized=True,
+        agent_temperature=0.1,
+        max_function_calls_per_turn=3,
+        evaluation_batch_size=4  # Smaller batch for large model
+    ),
+    
+    # Adding missing qwen25_7b model
+    "qwen25_7b": ModelConfig(
+        model_name="Qwen 2.5 7B Instruct", 
+        huggingface_id="Qwen/Qwen2.5-7B-Instruct",
+        license="Apache 2.0",
+        size_gb=7.5,
+        context_window=32768,
+        preset="balanced",
+        specialization_category="general",
+        specialization_subcategory="text_generation",
+        primary_use_cases=["general_chat", "reasoning", "mathematics", "coding"],
+        max_model_len=4096,
+        gpu_memory_utilization=0.85,
+        priority="HIGH",
+        agent_optimized=True,
+        evaluation_batch_size=8
+    ),
+    
+    # DeepSeek Mathematics Specialist
+    "deepseek_math_7b": ModelConfig(
+        model_name="DeepSeek Math 7B Instruct",
+        huggingface_id="deepseek-ai/deepseek-math-7b-instruct", 
+        license="DeepSeek License",
+        size_gb=7.0,
+        context_window=4096,
+        preset="balanced",
+        specialization_category="mathematics",
+        specialization_subcategory="mathematical_reasoning",
+        primary_use_cases=["mathematical_problems", "step_by_step_reasoning", "mathematical_proofs"],
+        max_model_len=4096,
+        gpu_memory_utilization=0.85,
+        priority="HIGH",
+        agent_optimized=True,
+        agent_temperature=0.1,
+        evaluation_batch_size=8
+    ),
+    
+    # MetaMath Large Mathematical Model  
+    "metamath_70b": ModelConfig(
+        model_name="MetaMath 70B V1.0",
+        huggingface_id="meta-math/MetaMath-70B-V1.0",
+        license="Custom License",
+        size_gb=70.0,
+        context_window=4096,
+        preset="performance",
+        specialization_category="mathematics", 
+        specialization_subcategory="advanced_mathematical_reasoning",
+        primary_use_cases=["complex_math", "mathematical_reasoning", "problem_solving"],
+        quantization_method="awq",  # Will look for quantized version if needed
+        max_model_len=4096,
+        gpu_memory_utilization=0.75,
+        priority="MEDIUM",
+        agent_optimized=True,
+        agent_temperature=0.1,
+        evaluation_batch_size=4
+    ),
+
+    # Biomedical Specialist Models
+    "biomistral_7b": ModelConfig(
+        model_name="BioMistral 7B",
+        huggingface_id="BioMistral/BioMistral-7B-AWQ-QGS128-W4-GEMM",
+        license="Apache-2.0",
+        size_gb=7.0,
+        context_window=2048,  # Fixed: actual context window from docs
+        preset="balanced",
+        specialization_category="biomedical",
+        specialization_subcategory="medical_reasoning",
+        primary_use_cases=["biomedical_qa", "clinical_reasoning", "medical_literature_analysis"],
+        quantization_method="awq",
+        max_model_len=2048,  # Fixed: match context window
+        gpu_memory_utilization=0.85,
+        priority="HIGH",
+        agent_optimized=True,
+        agent_temperature=0.1,
+        max_function_calls_per_turn=10,
+        evaluation_batch_size=8
+    ),
+
+    "biomistral_7b_unquantized": ModelConfig(
+        model_name="BioMistral 7B (Unquantized)",
+        huggingface_id="BioMistral/BioMistral-7B",
+        license="Apache-2.0",
+        size_gb=15.0,  # Full precision model size
+        context_window=2048,
+        preset="balanced",
+        specialization_category="biomedical",
+        specialization_subcategory="medical_reasoning",
+        primary_use_cases=["biomedical_qa", "clinical_reasoning", "medical_literature_analysis"],
+        quantization_method="none",  # Full precision for comparison
+        max_model_len=2048,
+        gpu_memory_utilization=0.85,
+        priority="HIGH",
+        agent_optimized=True,
+        agent_temperature=0.1,
+        max_function_calls_per_turn=10,
+        evaluation_batch_size=4  # Smaller batch due to higher memory usage
+    ),
+
+    # Stanford BioMedLM - High-performance biomedical specialist
+    "biomedlm_7b": ModelConfig(
+        model_name="Stanford BioMedLM 2.7B",
+        huggingface_id="stanford-crfm/BioMedLM",
+        license="bigscience-bloom-rail-1.0",
+        size_gb=2.7,
+        context_window=1024,  # Custom tokenizer, sequence length 1024
+        preset="balanced",
+        specialization_category="biomedical",
+        specialization_subcategory="biomedical_text_generation",
+        primary_use_cases=["biomedical_qa", "medical_text_generation", "pubmed_analysis"],
+        quantization_method="none",
+        max_model_len=1024,
+        gpu_memory_utilization=0.85,
+        priority="HIGH",  # Excellent performance on MedQA (50.3% accuracy)
+        agent_optimized=True,
+        agent_temperature=0.1,
+        max_function_calls_per_turn=10,
+        evaluation_batch_size=8  # Good efficiency for 2.7B model
+    ),
+
+    "clinical_camel_70b": ModelConfig(
+        model_name="Clinical Camel 70B",
+        huggingface_id="augtoma/qCammel-70-x",  # Clinical domain fine-tuned model
+        license="Custom License",
+        size_gb=70.0,
+        context_window=4096,
+        preset="memory_optimized",
+        specialization_category="biomedical",
+        specialization_subcategory="clinical_applications",
+        primary_use_cases=["clinical_decision_support", "medical_diagnosis", "patient_care_planning"],
+        quantization_method="awq",  # Use quantization for 70B
+        max_model_len=4096,
+        gpu_memory_utilization=0.75,
+        priority="LOW",  # Large model, likely similar performance issues as wizardmath_70b
+        agent_optimized=True,
+        agent_temperature=0.05,  # Very low for medical accuracy
+        max_function_calls_per_turn=15,
+        evaluation_batch_size=2
+    ),
+
+    # MedAlpaca - LLaMA-based medical instruction tuned model
+    "medalpaca_7b": ModelConfig(
+        model_name="MedAlpaca 7B",
+        huggingface_id="medalpaca/medalpaca-7b",
+        license="Creative Commons",
+        size_gb=7.0,
+        context_window=2048,  # LLaMA-based context
+        preset="balanced",
+        specialization_category="biomedical",
+        specialization_subcategory="medical_instruction_following",
+        primary_use_cases=["medical_qa", "patient_education", "clinical_guidelines"],
+        quantization_method="none",
+        max_model_len=2048,
+        gpu_memory_utilization=0.85,
+        priority="HIGH",
+        agent_optimized=True,
+        agent_temperature=0.1,
+        max_function_calls_per_turn=12,
+        evaluation_batch_size=6
+    ),
+
+    "medalpaca_13b": ModelConfig(
+        model_name="MedAlpaca 13B",
+        huggingface_id="medalpaca/medalpaca-13b",
+        license="Custom License",
+        size_gb=13.0,
+        context_window=2048,
+        preset="balanced",
+        specialization_category="biomedical",
+        specialization_subcategory="medical_instruction_following",
+        primary_use_cases=["medical_qa", "patient_education", "clinical_guidelines"],
+        quantization_method="none",
+        max_model_len=2048,
+        gpu_memory_utilization=0.85,
+        priority="HIGH",
+        agent_optimized=True,
+        agent_temperature=0.1,
+        max_function_calls_per_turn=12,
+        evaluation_batch_size=6
+    ),
+
+    # Microsoft BioGPT - Generative biomedical transformer
+    "biogpt": ModelConfig(
+        model_name="Microsoft BioGPT",
+        huggingface_id="microsoft/biogpt",
+        license="MIT",
+        size_gb=1.5,  # Relatively compact generative model
+        context_window=1024,  # GPT-2 style context
+        preset="balanced",
+        specialization_category="biomedical",
+        specialization_subcategory="biomedical_text_generation",
+        primary_use_cases=["biomedical_generation", "relation_extraction", "pubmedqa"],
+        quantization_method="none",
+        max_model_len=1024,
+        gpu_memory_utilization=0.85,
+        priority="HIGH",  # Strong performance on multiple biomedical tasks
+        agent_optimized=True,
+        agent_temperature=0.1,
+        max_function_calls_per_turn=10,
+        evaluation_batch_size=8  # Good efficiency
+    ),
+
+    # Bio_ClinicalBERT - MIMIC-III trained clinical BERT
+    "bio_clinicalbert": ModelConfig(
+        model_name="Bio_ClinicalBERT",
+        huggingface_id="emilyalsentzer/Bio_ClinicalBERT",
+        license="MIT",
+        size_gb=1.3,  # BERT-style model size
+        context_window=512,  # BERT context limit
+        preset="performance",
+        specialization_category="biomedical",
+        specialization_subcategory="clinical_text_understanding",
+        primary_use_cases=["clinical_ner", "mimic_analysis", "clinical_classification"],
+        quantization_method="none",
+        max_model_len=512,
+        gpu_memory_utilization=0.50,  # Lightweight BERT model
+        priority="HIGH",
+        agent_optimized=False,  # BERT-style, primarily for embeddings/classification
+        agent_temperature=0.0,
+        max_function_calls_per_turn=5,
+        evaluation_batch_size=16  # Can handle larger batches due to small size
+    ),
+
+    "pubmedbert_large": ModelConfig(
+        model_name="PubMedBERT Large",
+        huggingface_id="microsoft/BiomedNLP-PubMedBERT-base-uncased-abstract-fulltext",
+        license="MIT",
+        size_gb=1.3,  # BERT-style model, much smaller
+        context_window=512,  # BERT-style context limit
+        preset="performance",  # Small and fast
+        specialization_category="biomedical", 
+        specialization_subcategory="biomedical_language_understanding",
+        primary_use_cases=["biomedical_ner", "pubmed_classification", "medical_entity_extraction"],
+        quantization_method="none",
+        max_model_len=512,
+        gpu_memory_utilization=0.50,  # Very light model
+        priority="HIGH",
+        agent_optimized=False,  # BERT-style, not generative
+        agent_temperature=0.0,
+        max_function_calls_per_turn=5,
+        evaluation_batch_size=16
+    ),
+
+    "biogpt_large": ModelConfig(
+        model_name="BioGPT Large",
+        huggingface_id="microsoft/biogpt",
+        license="MIT",
+        size_gb=1.5,
+        context_window=1024,
+        preset="balanced",
+        specialization_category="biomedical",
+        specialization_subcategory="biomedical_text_generation",
+        primary_use_cases=["biomedical_text_generation", "scientific_writing", "medical_abstracts"],
+        quantization_method="none",
+        max_model_len=1024,
+        gpu_memory_utilization=0.70,
+        priority="HIGH",
+        agent_optimized=True,
+        agent_temperature=0.2,  # Slightly higher for text generation
+        max_function_calls_per_turn=8,
+        evaluation_batch_size=12
     )
 }
 

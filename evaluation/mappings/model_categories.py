@@ -82,12 +82,113 @@ CODING_SPECIALISTS = {
 
 
 # ================================
+# BIOMEDICAL SPECIALISTS CATEGORY
+# ================================
+
+BIOMEDICAL_SPECIALISTS = {
+    'models': [
+        'biomistral_7b',              # BioMistral specialized (AWQ quantized)
+        'biomistral_7b_unquantized',  # BioMistral unquantized for comparison
+        'biomedlm_7b',                # Stanford BioMedLM 2.7B - PubMed trained
+        'medalpaca_7b',               # MedAlpaca 7B - LLaMA medical instruction tuned
+        'biogpt',                     # Microsoft BioGPT - biomedical generation
+        'bio_clinicalbert',           # Bio_ClinicalBERT - MIMIC-III clinical BERT
+        'medalpaca_13b',              # Medical domain instruction-tuned (larger)
+        'clinical_camel_70b',         # Clinical domain fine-tuned Llama (large)
+        'pubmedbert_large',           # PubMed domain BERT-style model
+        'biogpt_large'                # Biomedical text generation model (if exists)
+    ],
+    'primary_datasets': [
+        "bioasq",
+        "pubmedqa", 
+        "mediqa"
+    ],
+    'optional_datasets': [
+        "biomedical_sample",
+        "biomedical_extended",
+        "scierc"
+    ],
+    'evaluation_metrics': [
+        "biomedical_qa_accuracy",
+        "medical_entity_recognition", 
+        "clinical_relevance_score",
+        "pubmed_domain_accuracy",
+        "biomedical_reasoning"
+    ],
+    'category_config': {
+        "default_sample_limit": 50,
+        "timeout_per_sample": 45,
+        "max_tokens": 1024,
+        "temperature": 0.1,  # Low temperature for medical accuracy
+        "top_p": 0.9,
+        "stop_sequences": ["Question:", "Answer:", "\n\n\n"],
+        "enable_medical_validation": True,
+        "enable_entity_extraction": True,
+        "save_medical_reasoning": True,
+        "require_evidence_citing": True
+    },
+    'priority': "HIGH"
+}
+
+
+# ================================
+# MATHEMATICAL REASONING CATEGORY
+# ================================
+
+MATHEMATICAL_REASONING = {
+    'models': [
+        'qwen25_math_7b',    # Specialized Qwen math model - working ✅  
+        'deepseek_math_7b',  # DeepSeek specialized math model
+        'wizardmath_70b',    # WizardMath large model with AWQ quantization ✅
+        'metamath_70b',      # MetaMath large model for comparison
+        'qwen25_7b'          # General model with strong math capabilities ✅
+    ],
+    'primary_datasets': [
+        "gsm8k",
+        "enhanced_math_fixed"
+    ],
+    'optional_datasets': [
+        "advanced_math_sample"
+    ],
+    'evaluation_metrics': [
+        "mathematical_accuracy",
+        "problem_solving_steps", 
+        "numerical_correctness",
+        "reasoning_clarity",
+        "solution_completeness"
+    ],
+    'category_config': {
+        "default_sample_limit": 50,
+        "timeout_per_sample": 45,
+        "max_tokens": 1024,
+        "temperature": 0.1,  # Low temperature for consistent mathematical reasoning
+        "top_p": 0.9,
+        "stop_sequences": ["Problem:", "Solution:", "\n\n\n"],
+        "enable_step_validation": True,
+        "enable_numerical_verification": True,
+        "save_reasoning_steps": True,
+        "require_final_answer": True
+    },
+    'priority': "HIGH"
+}
+
+
+# ================================
 # CATEGORY REGISTRY
 # ================================
 
 # Registry of all available categories (will expand as we add more)
 CATEGORY_REGISTRY = {
-    "coding_specialists": CODING_SPECIALISTS
+    "coding_specialists": CODING_SPECIALISTS,
+    "mathematical_reasoning": MATHEMATICAL_REASONING,
+    "biomedical_specialists": BIOMEDICAL_SPECIALISTS
+}
+
+# Alias for compatibility with different import patterns
+MODEL_CATEGORIES = {
+    "CODING_SPECIALISTS": CODING_SPECIALISTS['models'],
+    "MATHEMATICAL_REASONING": MATHEMATICAL_REASONING['models'],
+    "BIOMEDICAL_SPECIALISTS": BIOMEDICAL_SPECIALISTS['models']
 }
 
 
@@ -95,18 +196,18 @@ CATEGORY_REGISTRY = {
 # HELPER FUNCTIONS
 # ================================
 
-def get_all_categories() -> Dict[str, ModelCategory]:
+def get_all_categories() -> Dict[str, Dict[str, Any]]:
     """Get all available model categories"""
     return CATEGORY_REGISTRY.copy()
 
 
-def get_category_for_model(model_name: str) -> Optional[ModelCategory]:
+def get_category_for_model(model_name: str) -> Optional[str]:
     """Find which category a model belongs to"""
     model_lower = model_name.lower()
     
-    for category in CATEGORY_REGISTRY.values():
-        if category.is_model_in_category(model_name):
-            return category
+    for category_name, category in CATEGORY_REGISTRY.items():
+        if model_lower in [m.lower() for m in category['models']]:
+            return category_name
     
     return None
 
@@ -132,18 +233,22 @@ def get_datasets_for_category(category_name: str, include_optional: bool = True)
 
 def is_valid_model_dataset_pair(model_name: str, dataset_name: str) -> bool:
     """Check if a model-dataset combination is valid based on category mapping"""
-    category = get_category_for_model(model_name)
-    if not category:
+    category_name = get_category_for_model(model_name)
+    if not category_name:
         return False  # Model not in any category
     
-    all_datasets = category.get_all_datasets()
+    category = CATEGORY_REGISTRY.get(category_name.lower())
+    if not category:
+        return False
+    
+    all_datasets = category['primary_datasets'] + category['optional_datasets']
     return dataset_name.lower() in [d.lower() for d in all_datasets]
 
 
 def get_category_evaluation_config(category_name: str) -> Dict[str, Any]:
     """Get evaluation configuration for a category"""
     category = CATEGORY_REGISTRY.get(category_name.lower())
-    return category.get_evaluation_config() if category else {}
+    return category['category_config'] if category else {}
 
 
 # ================================
