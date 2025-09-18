@@ -305,7 +305,7 @@ If you don't need to use a function, respond normally with helpful information."
     
     def get_preset_comparison(self) -> Dict[str, Dict[str, Any]]:
         """Compare this model across different presets"""
-        from configs.model_configs import estimate_memory_usage
+        from configs.config_validation import estimate_memory_usage
         
         presets = ["balanced", "performance", "memory_optimized"]
         comparison = {}

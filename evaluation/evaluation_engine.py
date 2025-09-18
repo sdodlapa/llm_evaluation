@@ -12,7 +12,8 @@ import json
 
 from models.base_model import BaseModelImplementation, ModelPerformanceMetrics, AgentEvaluationResult
 from models.registry import get_model_registry
-from configs.model_configs import ModelConfig, estimate_memory_usage
+from configs.model_configs import ModelConfig
+from configs.config_validation import estimate_memory_usage
 
 try:
     from .dataset_manager import EnhancedDatasetManager

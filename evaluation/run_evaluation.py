@@ -20,7 +20,8 @@ sys.path.append(str(Path(__file__).parent.parent))
 # Add project root to path
 sys.path.append(str(Path(__file__).parent.parent))
 
-from configs.model_configs import MODEL_CONFIGS, get_high_priority_models, get_agent_optimized_models, ModelConfig, estimate_memory_usage
+from configs.model_configs import MODEL_CONFIGS, get_high_priority_models, get_agent_optimized_models, ModelConfig
+from configs.config_validation import estimate_memory_usage
 from models.base_model import BaseModelImplementation, ModelPerformanceMetrics, AgentEvaluationResult
 try:
     from .orchestrator import EvaluationOrchestrator
