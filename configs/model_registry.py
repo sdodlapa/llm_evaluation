@@ -101,10 +101,10 @@ class ModelConfig:
             "max_model_len": self.max_model_len,
             "gpu_memory_utilization": self.gpu_memory_utilization,
             "trust_remote_code": self.trust_remote_code,
-            "torch_dtype": self.torch_dtype,
+            "dtype": self.torch_dtype,  # Changed from torch_dtype to dtype for vLLM compatibility
             "max_num_seqs": self.max_num_seqs,
             "enable_prefix_caching": self.enable_prefix_caching,
-            "use_v2_block_manager": self.use_v2_block_manager,
+            # "use_v2_block_manager": self.use_v2_block_manager,  # Not available in current vLLM version
             "enforce_eager": self.enforce_eager,
             "tensor_parallel_size": self.tensor_parallel_size,
             "pipeline_parallel_size": self.pipeline_parallel_size,
@@ -136,6 +136,26 @@ class ModelConfig:
         config.update(self._vllm_overrides)
         
         return config
+    
+    def to_vllm_args(self) -> Dict[str, Any]:
+        """Convert to vLLM engine arguments (backward compatibility method)
+        
+        This method maintains compatibility with existing evaluation code
+        that expects to_vllm_args() method on ModelConfig objects.
+        """
+        # Use the existing get_vllm_config method
+        return self.get_vllm_config()
+    
+    def get_agent_sampling_params(self) -> Dict[str, Any]:
+        """Get optimized sampling parameters for agent tasks"""
+        return {
+            "temperature": self.agent_temperature,
+            "top_p": 0.9,
+            "max_tokens": 2048,
+            "frequency_penalty": 0.1,
+            "presence_penalty": 0.1,
+            "stop": ["<|endoftext|>", "\n\nUser:", "\n\nHuman:"],
+        }
     
     def create_preset_variant(self, preset: str) -> 'ModelConfig':
         """Create a new config with different preset"""
