@@ -29,22 +29,22 @@ QWEN_MODEL_CONFIGS = {
         evaluation_batch_size=8
     ),
     
-    # Qwen3-Coder - Specialized coding model
+    # Qwen3-Coder - Specialized coding model (using 7B AWQ since 30B AWQ doesn't exist)
     "qwen3_coder_30b": ModelConfig(
-        model_name="Qwen3-Coder 30B-A3B Instruct",
-        huggingface_id="Qwen/Qwen3-Coder-30B-A3B-Instruct",
+        model_name="Qwen2.5-Coder 7B Instruct",
+        huggingface_id="Qwen/Qwen2.5-Coder-7B-Instruct-AWQ",  # Use available AWQ version
         license="Apache 2.0",
-        size_gb=31.0,  # MoE with 3B active parameters
+        size_gb=7.0,  # Updated size for 7B model
         context_window=128000,
         preset="performance",  # Maximize coding performance
-        quantization_method="awq_marlin",  # Use AWQ for efficiency
+        quantization_method="awq_marlin",  # Keep AWQ with correct model
         max_model_len=32768,
-        gpu_memory_utilization=0.88,
+        gpu_memory_utilization=0.85,  # Reduced for smaller model
         priority="HIGH",
         agent_optimized=True,
         agent_temperature=0.05,  # Very low for precise coding
         max_function_calls_per_turn=8,  # More calls for complex coding tasks
-        evaluation_batch_size=4,  # Smaller batch for large model
+        evaluation_batch_size=8,  # Increased batch for smaller model
         benchmark_iterations=5
     ),
     

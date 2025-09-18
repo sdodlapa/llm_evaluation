@@ -33,9 +33,28 @@ def create_generic_model(model_name: str, preset: str = "balanced", cache_dir: O
         # for different model families (Qwen, LLaMA, Mistral, BioGPT, etc.)
         logger.info(f"Creating {model_name} using generic implementation with preset: {preset}")
         
-        return Qwen3Implementation(
+        model_instance = Qwen3Implementation(
             config=model_config.create_preset_variant(preset)
         )
+        
+        logger.info(f"Model instance created. Attempting to load model...")
+        
+        # Load the model after creation
+        load_success = model_instance.load_model()
+        logger.info(f"Model load_model() returned: {load_success}")
+        logger.info(f"Model is_loaded status: {model_instance.is_loaded}")
+        
+        if not load_success:
+            logger.error(f"Failed to load model {model_name} - load_model() returned False")
+            return None
+            
+        # Double-check that model is actually loaded
+        if not model_instance.is_loaded:
+            logger.error(f"Model {model_name} load_model() succeeded but is_loaded is False")
+            return None
+            
+        logger.info(f"✅ Model {model_name} successfully loaded and ready")
+        return model_instance
         
     except Exception as e:
         logger.error(f"Failed to create generic model {model_name}: {e}")

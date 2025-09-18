@@ -39,35 +39,33 @@ class ModelCategory:
 # CODING SPECIALISTS CATEGORY
 # ================================
 
-CODING_SPECIALISTS = ModelCategory(
-    name="coding_specialists",
-    description="Models optimized for code generation, debugging, and programming tasks",
-    models=[
-        "qwen3_8b",
-        "qwen3_14b", 
-        "qwen25_7b",
-        "qwen3_coder_30b",
-        "deepseek_coder_16b"
+CODING_SPECIALISTS = {
+    'models': [
+        'qwen3_8b',
+        'qwen3_14b',
+        'codestral_22b',
+        'qwen3_coder_30b',
+        'deepseek_coder_16b'
     ],
-    primary_datasets=[
+    'primary_datasets': [
         "humaneval",
         "mbpp", 
         "bigcodebench"
     ],
-    optional_datasets=[
+    'optional_datasets': [
         "codecontests",
         "apps",
         "advanced_coding_sample",
         "advanced_coding_extended"
     ],
-    evaluation_metrics=[
+    'evaluation_metrics': [
         "code_execution",
         "pass_at_k", 
         "functional_correctness",
         "compilation_success",
         "test_case_pass_rate"
     ],
-    category_config={
+    'category_config': {
         "default_sample_limit": 100,
         "timeout_per_sample": 30,
         "max_tokens": 2048,
@@ -79,8 +77,8 @@ CODING_SPECIALISTS = ModelCategory(
         "enable_test_execution": True,
         "save_generated_code": True
     },
-    priority="HIGH"
-)
+    'priority': "HIGH"
+}
 
 
 # ================================
@@ -116,7 +114,7 @@ def get_category_for_model(model_name: str) -> Optional[ModelCategory]:
 def get_models_in_category(category_name: str) -> List[str]:
     """Get all models in a specific category"""
     category = CATEGORY_REGISTRY.get(category_name.lower())
-    return category.models if category else []
+    return category['models'] if category else []
 
 
 def get_datasets_for_category(category_name: str, include_optional: bool = True) -> List[str]:
@@ -125,9 +123,9 @@ def get_datasets_for_category(category_name: str, include_optional: bool = True)
     if not category:
         return []
     
-    datasets = category.primary_datasets.copy()
+    datasets = category['primary_datasets'].copy()
     if include_optional:
-        datasets.extend(category.optional_datasets)
+        datasets.extend(category['optional_datasets'])
     
     return datasets
 

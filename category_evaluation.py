@@ -7,17 +7,23 @@ Command-line interface for running systematic evaluations of model categories
 on their appropriate datasets using the existing pipeline infrastructure.
 
 Usage Examples:
-  # Evaluate all coding specialists on all coding datasets with 5 samples
+  # Evaluate all coding specialists on all coding datasets with 5 samples (balanced preset)
   python category_evaluation.py --category coding_specialists --samples 5
   
+  # Evaluate with performance preset for maximum throughput
+  python category_evaluation.py --category coding_specialists --samples 5 --preset performance
+  
+  # Evaluate with memory-optimized preset for efficiency
+  python category_evaluation.py --category coding_specialists --samples 5 --preset memory_optimized
+  
   # Evaluate specific model on its category datasets
-  python category_evaluation.py --model qwen3_8b --samples 10
+  python category_evaluation.py --model qwen3_8b --samples 10 --preset balanced
   
   # Evaluate specific model on specific dataset
-  python category_evaluation.py --model qwen3_8b --dataset humaneval --samples 5
+  python category_evaluation.py --model qwen3_8b --dataset humaneval --samples 5 --preset performance
   
   # Dry run to see what would be evaluated
-  python category_evaluation.py --category coding_specialists --dry-run
+  python category_evaluation.py --category coding_specialists --dry-run --preset balanced
 """
 
 import argparse
@@ -94,9 +100,29 @@ class CategoryEvaluationCLI:
         )
         
         parser.add_argument(
+            "--preset",
+            choices=["balanced", "performance", "memory_optimized"],
+            default="balanced",
+            help="Model preset configuration (default: balanced)"
+        )
+        
+        parser.add_argument(
             "--include-optional",
             action="store_true",
             help="Include optional datasets for category evaluation"
+        )
+        
+        # Model filtering (for category mode)
+        parser.add_argument(
+            "--models",
+            nargs="+",
+            help="Specific models to include in category evaluation (space-separated)"
+        )
+        
+        parser.add_argument(
+            "--exclude-models", 
+            nargs="+",
+            help="Models to exclude from category evaluation (space-separated)"
         )
         
         # Execution control
@@ -280,11 +306,47 @@ class CategoryEvaluationCLI:
         tasks = []
         
         if args.category:
-            # Category-based evaluation
+            # Category-based evaluation with optional model filtering
+            specific_models = None
+            
+            # Apply model filtering if specified
+            if args.models or args.exclude_models:
+                from evaluation.mappings.model_categories import get_models_in_category
+                all_category_models = get_models_in_category(args.category)
+                
+                if args.models:
+                    # Include only specified models
+                    specific_models = [m for m in args.models if m in all_category_models]
+                    if len(specific_models) != len(args.models):
+                        missing = set(args.models) - set(specific_models)
+                        logger.warning(f"Models not in category '{args.category}': {missing}")
+                else:
+                    specific_models = all_category_models.copy()
+                
+                if args.exclude_models:
+                    # Handle both space-separated and comma-separated exclude models
+                    exclude_list = []
+                    for item in args.exclude_models:
+                        if ',' in item:
+                            exclude_list.extend([m.strip() for m in item.split(',')])
+                        else:
+                            exclude_list.append(item.strip())
+                    
+                    # Remove excluded models
+                    specific_models = [m for m in specific_models if m not in exclude_list]
+                    logger.info(f"Excluding models: {exclude_list}")
+                
+                if not specific_models:
+                    logger.error("No models remaining after filtering")
+                    return []
+                
+                logger.info(f"Filtered models for evaluation: {specific_models}")
+            
             evaluation_tasks = self.manager.generate_evaluation_tasks(
                 args.category,
                 sample_limit=args.samples,
-                include_optional=args.include_optional
+                include_optional=args.include_optional,
+                specific_models=specific_models
             )
             
             for task in evaluation_tasks:
@@ -293,6 +355,7 @@ class CategoryEvaluationCLI:
                     'dataset': task.dataset_name,
                     'category': task.category,
                     'samples': task.sample_limit,
+                    'preset': args.preset,
                     'config': task.evaluation_config
                 })
         
@@ -304,6 +367,7 @@ class CategoryEvaluationCLI:
                     'dataset': args.dataset,
                     'category': None,
                     'samples': args.samples,
+                    'preset': args.preset,
                     'config': {}
                 })
             else:
@@ -323,6 +387,7 @@ class CategoryEvaluationCLI:
                             'dataset': task.dataset_name,
                             'category': task.category,
                             'samples': task.sample_limit,
+                            'preset': args.preset,
                             'config': task.evaluation_config
                         })
                 else:
@@ -343,6 +408,7 @@ class CategoryEvaluationCLI:
         
         print(f"Total tasks: {len(tasks)}")
         print(f"Total samples: {sum(task['samples'] for task in tasks)}")
+        print(f"Preset mode: {tasks[0]['preset'] if tasks else 'N/A'}")
         
         # Group by category
         by_category = {}
@@ -404,29 +470,77 @@ class CategoryEvaluationCLI:
         
         for i, task in enumerate(tasks, 1):
             print(f"\n[{i}/{len(tasks)}] Evaluating {task['model']} on {task['dataset']}")
-            print(f"Samples: {task['samples']}")
+            print(f"Samples: {task['samples']}, Preset: {task['preset']}")
             
             try:
                 # Use existing pipeline for evaluation
                 result = self.orchestrator.run_single_evaluation(
                     model_name=task['model'],
                     dataset_name=task['dataset'],
+                    preset=task['preset'],
                     sample_limit=task['samples']
                 )
                 
-                if result and result.get('success', False):
+                if result and not result.get('error'):
                     print(f"✅ Success: {result.get('summary', 'Completed')}")
                     success_count += 1
                     
-                    # Add result to session data
+                    # Extract nested data from orchestrator result structure
+                    eval_result = result.get('evaluation_result', {})
+                    
+                    # Save detailed predictions for debugging during development
+                    if 'predictions' in eval_result and 'execution_details' in eval_result:
+                        predictions_file = output_path / f"predictions_{session_id}_task{i}_{task['model']}_{task['dataset']}.json"
+                        
+                        # Convert evaluation metrics to JSON-serializable format
+                        serializable_metrics = {}
+                        eval_metrics = eval_result.get('evaluation_metrics', {})
+                        for key, value in eval_metrics.items():
+                            if hasattr(value, '__dict__'):
+                                # Convert object to dictionary
+                                serializable_metrics[key] = value.__dict__
+                            else:
+                                serializable_metrics[key] = value
+                        
+                        prediction_data = {
+                            "task_info": task,
+                            "predictions": eval_result['predictions'],
+                            "ground_truth": eval_result.get('ground_truth', []),
+                            "execution_details": eval_result['execution_details'],
+                            "evaluation_metrics": serializable_metrics,
+                            "timestamp": datetime.now().isoformat()
+                        }
+                        with open(predictions_file, 'w') as f:
+                            json.dump(prediction_data, f, indent=2)
+                        print(f"📄 Predictions saved: {predictions_file}")
+                    
+                    # Add result to session data (without predictions to keep session file smaller)
+                    result_copy = result.copy()
+                    eval_result_copy = result_copy.get('evaluation_result', {}).copy()
+                    eval_result_copy.pop('predictions', None)  # Remove predictions from session log
+                    eval_result_copy.pop('execution_details', None)  # Remove detailed execution from session log
+                    
+                    # Convert evaluation metrics to JSON-serializable format in session data too
+                    if 'evaluation_metrics' in eval_result_copy:
+                        serializable_session_metrics = {}
+                        for key, value in eval_result_copy['evaluation_metrics'].items():
+                            if hasattr(value, '__dict__'):
+                                serializable_session_metrics[key] = value.__dict__
+                            else:
+                                serializable_session_metrics[key] = value
+                        eval_result_copy['evaluation_metrics'] = serializable_session_metrics
+                    
+                    result_copy['evaluation_result'] = eval_result_copy
+                    
                     session_data['results'].append({
                         "task_index": i,
                         "model": task['model'],
                         "dataset": task['dataset'],
                         "category": task['category'],
                         "samples": task['samples'],
+                        "preset": task['preset'],
                         "success": True,
-                        "result": result,
+                        "result": result_copy,
                         "timestamp": datetime.now().isoformat()
                     })
                 else:
@@ -437,6 +551,7 @@ class CategoryEvaluationCLI:
                         "dataset": task['dataset'],
                         "category": task['category'],
                         "samples": task['samples'],
+                        "preset": task['preset'],
                         "success": False,
                         "error": result.get('error', 'Unknown error'),
                         "timestamp": datetime.now().isoformat()
@@ -451,6 +566,7 @@ class CategoryEvaluationCLI:
                     "dataset": task['dataset'],
                     "category": task['category'],
                     "samples": task['samples'],
+                    "preset": task['preset'],
                     "success": False,
                     "error": str(e),
                     "timestamp": datetime.now().isoformat()

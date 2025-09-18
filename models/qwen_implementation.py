@@ -52,14 +52,18 @@ class Qwen3Implementation(BaseModelImplementation):
             logger.info(f"  Prefix Caching: {vllm_args['enable_prefix_caching']}")
             logger.info(f"  Quantization: {vllm_args.get('quantization', 'None')}")
             
+            logger.info(f"🔄 Starting vLLM engine initialization...")
             # Load the model with enhanced configuration
             self.llm_engine = LLM(**vllm_args)
+            logger.info(f"✅ vLLM engine created successfully")
             
+            logger.info(f"🔄 Loading tokenizer...")
             # Load tokenizer separately for token counting
             self.tokenizer = AutoTokenizer.from_pretrained(
                 self.model_config.huggingface_id,
                 trust_remote_code=True
             )
+            logger.info(f"✅ Tokenizer loaded successfully")
             
             # Get optimized sampling parameters from config
             sampling_config = self.model_config.get_agent_sampling_params()
@@ -106,6 +110,9 @@ class Qwen3Implementation(BaseModelImplementation):
             
             # Format prompt for Qwen-3 chat format
             formatted_prompt = self._format_prompt_for_qwen(prompt)
+            
+            # Check and handle prompt length
+            formatted_prompt = self._handle_prompt_length(formatted_prompt)
             
             # Generate response
             outputs = self.llm_engine.generate([formatted_prompt], sampling_params)
@@ -222,6 +229,44 @@ If you don't need to use a function, respond normally with helpful information."
                 continue
         
         return function_calls
+    
+    def _handle_prompt_length(self, formatted_prompt: str) -> str:
+        """Handle prompt length to prevent context overflow"""
+        if not hasattr(self, 'tokenizer') or self.tokenizer is None:
+            # Fallback: estimate tokens using character count (rough approximation)
+            estimated_tokens = len(formatted_prompt) // 4  # ~4 chars per token
+        else:
+            # Use actual tokenizer
+            tokens = self.tokenizer.encode(formatted_prompt)
+            estimated_tokens = len(tokens)
+        
+        max_context = self.model_config.max_model_len
+        # Reserve space for generation (20% of context)
+        max_input_tokens = int(max_context * 0.8)
+        
+        if estimated_tokens <= max_input_tokens:
+            return formatted_prompt
+        
+        logger.warning(f"Prompt too long ({estimated_tokens} tokens > {max_input_tokens} limit). Truncating...")
+        
+        if hasattr(self, 'tokenizer') and self.tokenizer is not None:
+            # Precise tokenization and truncation
+            tokens = self.tokenizer.encode(formatted_prompt)
+            truncated_tokens = tokens[:max_input_tokens]
+            truncated_prompt = self.tokenizer.decode(truncated_tokens)
+        else:
+            # Fallback: character-based truncation
+            truncation_ratio = max_input_tokens / estimated_tokens
+            truncate_at = int(len(formatted_prompt) * truncation_ratio)
+            truncated_prompt = formatted_prompt[:truncate_at]
+            
+            # Try to truncate at word boundary
+            last_space = truncated_prompt.rfind(' ')
+            if last_space > truncate_at * 0.9:  # If we can keep 90% of content
+                truncated_prompt = truncated_prompt[:last_space]
+        
+        logger.info(f"Truncated prompt from {estimated_tokens} to ~{max_input_tokens} tokens")
+        return truncated_prompt
     
     def test_function_calling_capability(self) -> Dict[str, float]:
         """Test function calling with standard examples"""
@@ -376,13 +421,41 @@ def create_qwen3_8b(preset: str = "balanced", cache_dir: Optional[str] = None) -
         # Add cache directory to vLLM overrides
         config._vllm_overrides["download_dir"] = cache_dir
     
-    return Qwen3Implementation(config)
+    model_instance = Qwen3Implementation(config)
+    
+    # Load the model after creation
+    logger.info(f"Loading qwen3_8b model with preset: {preset}")
+    if not model_instance.load_model():
+        logger.error(f"Failed to load qwen3_8b model")
+        return None
+    
+    logger.info(f"✅ qwen3_8b model loaded successfully")
+    return model_instance
 
 def create_qwen3_14b(preset: str = "balanced", cache_dir: Optional[str] = None) -> Qwen3Implementation:
     """Create Qwen-3 14B instance with specified preset"""
     from configs.model_configs import MODEL_CONFIGS
     
     base_config = MODEL_CONFIGS["qwen3_14b"]
+    if preset != "balanced":
+        config = base_config.create_preset_variant(preset)
+    else:
+        config = base_config
+    
+    if cache_dir:
+        # Add cache directory to vLLM overrides
+        config._vllm_overrides["download_dir"] = cache_dir
+    
+    model_instance = Qwen3Implementation(config)
+    
+    # Load the model after creation
+    logger.info(f"Loading qwen3_14b model with preset: {preset}")
+    if not model_instance.load_model():
+        logger.error(f"Failed to load qwen3_14b model")
+        return None
+    
+    logger.info(f"✅ qwen3_14b model loaded successfully")
+    return model_instance
     if preset != "balanced":
         config = base_config.create_preset_variant(preset)
     else:

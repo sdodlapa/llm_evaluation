@@ -77,6 +77,24 @@ class DatasetRegistry:
                 description="Measuring coding challenge competence with 10,000 problems",
                 implemented=False
             ),
+            "advanced_coding_sample": DatasetInfo(
+                name="advanced_coding_sample",
+                task_type="coding",
+                data_path="coding/advanced_coding_sample.json",
+                metadata_path=None,
+                sample_count=50,
+                evaluation_type="code_execution",
+                description="Advanced coding problems - sample set"
+            ),
+            "advanced_coding_extended": DatasetInfo(
+                name="advanced_coding_extended",
+                task_type="coding",
+                data_path="coding/advanced_coding_extended.json",
+                metadata_path=None,
+                sample_count=200,
+                evaluation_type="code_execution",
+                description="Advanced coding problems - extended set"
+            ),
             
             # Mathematical Reasoning
             "gsm8k": DatasetInfo(

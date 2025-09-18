@@ -157,6 +157,11 @@ class ModelConfig:
             "stop": ["<|endoftext|>", "\n\nUser:", "\n\nHuman:"],
         }
     
+    def apply_preset(self, preset: str) -> None:
+        """Apply preset configuration (public method for evaluation engine)"""
+        self.preset = preset
+        self._apply_preset()
+    
     def create_preset_variant(self, preset: str) -> 'ModelConfig':
         """Create a new config with different preset"""
         new_config = copy.deepcopy(self)
@@ -208,9 +213,9 @@ MODEL_CONFIGS = {
         license="Custom (Commercial OK)",
         size_gb=16.0,
         context_window=128000,
-        quantization_method="awq",
-        max_model_len=16384,  # MoE considerations
-        gpu_memory_utilization=0.75,  # Conservative for MoE
+        quantization_method="none",  # No AWQ version available
+        max_model_len=32768,  # Increased to match other working models
+        gpu_memory_utilization=0.85,  # Match working model pattern
         priority="HIGH",
         agent_optimized=True
     ),

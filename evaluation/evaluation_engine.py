@@ -113,14 +113,14 @@ class EvaluationEngine:
         
         try:
             # Load dataset samples
-            samples = self.dataset_manager.load_dataset_samples(dataset_name, sample_limit)
+            samples = self.dataset_manager.load_dataset(dataset_name, sample_limit)
             if not samples:
                 logger.warning(f"No samples loaded for dataset {dataset_name}")
                 return {"error": "No samples loaded", "dataset": dataset_name}
             
             # Get dataset info for task type
             dataset_info = self.dataset_manager.get_dataset_info(dataset_name)
-            task_type = dataset_info.get('task_type', 'general') if dataset_info else 'general'
+            task_type = dataset_info.task_type if dataset_info else 'general'
             
             # Evaluate samples
             predictions = []
@@ -174,7 +174,7 @@ class EvaluationEngine:
             
             # Evaluate predictions
             evaluation_metrics = evaluate_dataset_predictions(
-                predictions, ground_truth, dataset_name, task_type
+                task_type, predictions, samples, dataset_name
             )
             
             result = {
@@ -182,11 +182,14 @@ class EvaluationEngine:
                 'task_type': task_type,
                 'samples_processed': len(samples),
                 'evaluation_metrics': evaluation_metrics,
-                'execution_details': evaluation_details[:5],  # Sample of details
+                'execution_details': evaluation_details,  # Save all details during development
+                'predictions': predictions,  # Save all predictions for debugging
+                'ground_truth': ground_truth,  # Save all ground truth for debugging
                 'average_execution_time': sum(d.get('execution_time', 0) for d in evaluation_details) / len(evaluation_details) if evaluation_details else 0
             }
             
             logger.info(f"Completed evaluation on {dataset_name}: {evaluation_metrics}")
+            logger.info(f"Saved {len(predictions)} predictions and {len(evaluation_details)} execution details for debugging")
             return result
             
         except Exception as e:

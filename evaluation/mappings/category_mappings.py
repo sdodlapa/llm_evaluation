@@ -97,8 +97,8 @@ class CategoryMappingManager:
         if not category:
             return [], []
         
-        missing_primary = [d for d in category.primary_datasets if d not in self.available_datasets]
-        missing_optional = [d for d in category.optional_datasets if d not in self.available_datasets]
+        missing_primary = [d for d in category['primary_datasets'] if d not in self.available_datasets]
+        missing_optional = [d for d in category['optional_datasets'] if d not in self.available_datasets]
         
         return missing_primary, missing_optional
     
@@ -113,26 +113,26 @@ class CategoryMappingManager:
         # Category is ready if ALL primary datasets are available
         ready = len(missing_primary) == 0
         
-        available_primary = [d for d in category.primary_datasets if d in self.available_datasets]
-        available_optional = [d for d in category.optional_datasets if d in self.available_datasets]
+        available_primary = [d for d in category['primary_datasets'] if d in self.available_datasets]
+        available_optional = [d for d in category['optional_datasets'] if d in self.available_datasets]
         
         return {
             "ready": ready,
             "category": category_name,
-            "models": category.models,
+            "models": category['models'],
             "primary_datasets": {
-                "total": len(category.primary_datasets),
+                "total": len(category['primary_datasets']),
                 "available": len(available_primary),
                 "missing": missing_primary,
                 "available_list": available_primary
             },
             "optional_datasets": {
-                "total": len(category.optional_datasets),
+                "total": len(category['optional_datasets']),
                 "available": len(available_optional), 
                 "missing": missing_optional,
                 "available_list": available_optional
             },
-            "evaluation_config": category.get_evaluation_config()
+            "evaluation_config": category['category_config']
         }
     
     def generate_evaluation_tasks(
@@ -159,15 +159,15 @@ class CategoryMappingManager:
             return []
         
         # Determine models to evaluate
-        models_to_eval = specific_models if specific_models else category.models
+        models_to_eval = specific_models if specific_models else category['models']
         
         # Determine datasets to evaluate  
         if specific_datasets:
             datasets_to_eval = specific_datasets
         else:
-            datasets_to_eval = category.primary_datasets.copy()
+            datasets_to_eval = category['primary_datasets'].copy()
             if include_optional:
-                datasets_to_eval.extend(category.optional_datasets)
+                datasets_to_eval.extend(category['optional_datasets'])
         
         # Filter to only available datasets
         available_datasets = [d for d in datasets_to_eval if d in self.available_datasets]
@@ -178,7 +178,7 @@ class CategoryMappingManager:
         
         # Generate tasks
         tasks = []
-        evaluation_config = category.get_evaluation_config()
+        evaluation_config = category['category_config']
         
         for model in models_to_eval:
             for dataset in available_datasets:
@@ -188,7 +188,7 @@ class CategoryMappingManager:
                     category=category_name,
                     sample_limit=sample_limit,
                     evaluation_config=evaluation_config,
-                    priority=category.priority
+                    priority=category['priority']
                 )
                 tasks.append(task)
         
@@ -247,7 +247,7 @@ class CategoryMappingManager:
         
         # Calculate task combinations
         available_datasets = validation["primary_datasets"]["available_list"]
-        model_count = len(category.models)
+        model_count = len(category['models'])
         total_combinations = model_count * len(available_datasets)
         
         # Suggest sample limits based on task count
