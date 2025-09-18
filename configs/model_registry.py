@@ -220,6 +220,39 @@ MODEL_CONFIGS = {
         agent_optimized=True
     ),
     
+    "codestral_22b": ModelConfig(
+        model_name="Codestral 22B",
+        huggingface_id="mistralai/Codestral-22B-v0.1",
+        license="Mistral AI Non-Production License",
+        size_gb=22.0,
+        context_window=32768,
+        quantization_method="none",  # No AWQ version available
+        max_model_len=32768,
+        gpu_memory_utilization=0.85,
+        priority="HIGH",
+        agent_optimized=True,
+        specialization_category="code_generation",
+        specialization_subcategory="coding_specialist",
+        primary_use_cases=["code_generation", "code_completion", "code_analysis"]
+    ),
+    
+    "qwen3_coder_30b": ModelConfig(
+        model_name="Qwen3 Coder 30B",
+        huggingface_id="Qwen/Qwen2.5-Coder-32B-Instruct",  # Using the 32B instruct version
+        license="Apache 2.0",
+        size_gb=32.0,
+        context_window=32768,
+        quantization_method="none",  # No AWQ version available for this size
+        max_model_len=32768,
+        gpu_memory_utilization=0.90,  # Higher utilization for larger model
+        priority="HIGH",
+        agent_optimized=True,
+        specialization_category="code_generation",
+        specialization_subcategory="coding_specialist",
+        primary_use_cases=["code_generation", "code_completion", "code_analysis"],
+        max_num_seqs=32  # Lower batch size for larger model
+    ),
+    
     "llama31_8b": ModelConfig(
         model_name="Llama 3.1 8B Instruct",
         huggingface_id="meta-llama/Meta-Llama-3.1-8B-Instruct",

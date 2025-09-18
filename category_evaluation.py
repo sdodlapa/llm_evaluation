@@ -88,7 +88,7 @@ class CategoryEvaluationCLI:
         # Dataset specification
         parser.add_argument(
             "--dataset",
-            help="Specific dataset to evaluate (requires --model)"
+            help="Specific dataset to evaluate (requires --model or --category)"
         )
         
         # Evaluation parameters
@@ -342,22 +342,39 @@ class CategoryEvaluationCLI:
                 
                 logger.info(f"Filtered models for evaluation: {specific_models}")
             
-            evaluation_tasks = self.manager.generate_evaluation_tasks(
-                args.category,
-                sample_limit=args.samples,
-                include_optional=args.include_optional,
-                specific_models=specific_models
-            )
-            
-            for task in evaluation_tasks:
-                tasks.append({
-                    'model': task.model_name,
-                    'dataset': task.dataset_name,
-                    'category': task.category,
-                    'samples': task.sample_limit,
-                    'preset': args.preset,
-                    'config': task.evaluation_config
-                })
+            if args.dataset:
+                # Category + specific dataset: evaluate all category models on one dataset
+                from evaluation.mappings.model_categories import get_models_in_category
+                if specific_models is None:
+                    specific_models = get_models_in_category(args.category)
+                
+                for model in specific_models:
+                    tasks.append({
+                        'model': model,
+                        'dataset': args.dataset,
+                        'category': args.category,
+                        'samples': args.samples,
+                        'preset': args.preset,
+                        'config': {}
+                    })
+            else:
+                # Full category evaluation
+                evaluation_tasks = self.manager.generate_evaluation_tasks(
+                    args.category,
+                    sample_limit=args.samples,
+                    include_optional=args.include_optional,
+                    specific_models=specific_models
+                )
+                
+                for task in evaluation_tasks:
+                    tasks.append({
+                        'model': task.model_name,
+                        'dataset': task.dataset_name,
+                        'category': task.category,
+                        'samples': task.sample_limit,
+                        'preset': args.preset,
+                        'config': task.evaluation_config
+                    })
         
         elif args.model:
             if args.dataset:
@@ -611,8 +628,8 @@ class CategoryEvaluationCLI:
                 logger.error("Either --category or --model is required for evaluation")
                 sys.exit(1)
         
-        if args.dataset and not args.model:
-            logger.error("--dataset requires --model")
+        if args.dataset and not args.model and not args.category:
+            logger.error("--dataset requires either --model or --category")
             sys.exit(1)
         
         # Generate evaluation tasks
