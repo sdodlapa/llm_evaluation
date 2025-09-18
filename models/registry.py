@@ -127,3 +127,8 @@ def list_available_models() -> list:
 def get_model_families() -> Dict[str, list]:
     """Convenience function to get model families"""
     return model_registry.get_model_families()
+
+
+def get_model_registry() -> ModelRegistry:
+    """Get the global model registry instance"""
+    return model_registry

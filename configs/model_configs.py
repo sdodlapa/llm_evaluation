@@ -1182,3 +1182,8 @@ if __name__ == "__main__":
     print(f"Efficiency models: {len(get_efficiency_models())}")
     print(f"High priority models: {len(get_high_priority_models())}")
     print()
+
+
+def get_model_config(model_name: str) -> Optional[ModelConfig]:
+    """Get model configuration by name"""
+    return MODEL_CONFIGS.get(model_name)

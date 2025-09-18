@@ -23,6 +23,10 @@ sys.path.append(str(Path(__file__).parent.parent))
 from configs.model_configs import MODEL_CONFIGS, get_high_priority_models, get_agent_optimized_models, ModelConfig, estimate_memory_usage
 from models.base_model import BaseModelImplementation, ModelPerformanceMetrics, AgentEvaluationResult
 try:
+    from .orchestrator import EvaluationOrchestrator
+    from .cli_interface import EvaluationCLI
+    from .evaluation_engine import EvaluationEngine
+    from .result_processor import ResultProcessor
     from .dataset_manager import EnhancedDatasetManager
     from .metrics import EvaluationMetrics, evaluate_dataset_predictions, print_evaluation_summary
     from .performance_monitor import LivePerformanceMonitor
@@ -30,6 +34,10 @@ try:
     from .reporting import ResultsManager
 except ImportError:
     # When running as script, use absolute imports
+    from orchestrator import EvaluationOrchestrator
+    from cli_interface import EvaluationCLI
+    from evaluation_engine import EvaluationEngine
+    from result_processor import ResultProcessor
     from dataset_manager import EnhancedDatasetManager
     from metrics import EvaluationMetrics, evaluate_dataset_predictions, print_evaluation_summary
     from performance_monitor import LivePerformanceMonitor
@@ -47,7 +55,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 class LLMEvaluationRunner:
-    """Main class for running comprehensive LLM evaluations"""
+    """Main class for running comprehensive LLM evaluations - Now modular"""
     
     def __init__(self, output_dir: str = "results", cache_dir: Optional[str] = None, 
                  data_cache_dir: Optional[str] = None):
@@ -62,16 +70,18 @@ class LLMEvaluationRunner:
         (self.output_dir / "reports").mkdir(exist_ok=True)
         (self.output_dir / "dataset_results").mkdir(exist_ok=True)
         
-        # Initialize dataset manager, performance monitor, and dataset evaluator
-        self.dataset_manager = EnhancedDatasetManager(
-            base_data_path=data_cache_dir or "evaluation_data"
-        )
-        self.performance_monitor = LivePerformanceMonitor()
+        # Initialize new modular components
+        self.orchestrator = EvaluationOrchestrator(cache_dir, data_cache_dir)
+        self.cli = EvaluationCLI()
+        
+        # Keep backward compatibility with legacy components
+        self.dataset_manager = self.orchestrator.dataset_manager
+        self.performance_monitor = self.orchestrator.performance_monitor
         self.dataset_evaluator = DatasetEvaluator(self.dataset_manager)
         self.results_manager = ResultsManager(str(self.output_dir))
         self.evaluation_results = {}
         
-        # Load both synthetic and real test suites
+        # Load test suite (keeping for compatibility)
         self.test_suite = self._load_test_suite()
         self.real_datasets = {}
         
@@ -892,6 +902,94 @@ class LLMEvaluationRunner:
             f.write("\\n".join(report_lines))
         
         logger.info(f"Preset comparison report saved to {report_file}")
+    
+    # New modular evaluation methods using orchestrator
+    def run_comprehensive_evaluation_v2(self, 
+                                       models: List[str],
+                                       datasets: List[str],
+                                       presets: List[str] = None,
+                                       sample_limit: Optional[int] = None,
+                                       save_results: bool = True,
+                                       continue_on_error: bool = True) -> Dict[str, Any]:
+        """
+        Run comprehensive evaluation using the new modular orchestrator
+        
+        Args:
+            models: List of model names to evaluate
+            datasets: List of dataset names to evaluate on
+            presets: List of presets to test (default: ["balanced"])
+            sample_limit: Maximum samples per dataset
+            save_results: Whether to save results to files
+            continue_on_error: Whether to continue evaluation on errors
+        
+        Returns:
+            Dict containing all evaluation results
+        """
+        return self.orchestrator.run_comprehensive_evaluation(
+            models=models,
+            datasets=datasets,
+            presets=presets,
+            sample_limit=sample_limit,
+            save_results=save_results,
+            continue_on_error=continue_on_error
+        )
+    
+    def run_model_comparison_v2(self, 
+                               model_names: List[str],
+                               preset: str = "balanced",
+                               datasets: List[str] = None,
+                               sample_limit: Optional[int] = None) -> Dict[str, Any]:
+        """
+        Run a focused comparison between specific models using orchestrator
+        """
+        return self.orchestrator.run_model_comparison(
+            model_names=model_names,
+            preset=preset,
+            datasets=datasets,
+            sample_limit=sample_limit
+        )
+    
+    def run_preset_comparison_v2(self, 
+                                model_name: str,
+                                presets: List[str] = None,
+                                datasets: List[str] = None,
+                                sample_limit: Optional[int] = None) -> Dict[str, Any]:
+        """
+        Compare different presets for a single model using orchestrator
+        """
+        return self.orchestrator.run_preset_comparison(
+            model_name=model_name,
+            presets=presets,
+            datasets=datasets,
+            sample_limit=sample_limit
+        )
+    
+    def run_single_evaluation_v2(self,
+                                model_name: str,
+                                dataset_name: str,
+                                preset: str = "balanced",
+                                sample_limit: Optional[int] = None) -> Dict[str, Any]:
+        """
+        Run evaluation for a single model-dataset combination using orchestrator
+        """
+        return self.orchestrator.run_single_evaluation(
+            model_name=model_name,
+            dataset_name=dataset_name,
+            preset=preset,
+            sample_limit=sample_limit
+        )
+    
+    def get_available_models_v2(self) -> List[str]:
+        """Get list of available models via orchestrator"""
+        return self.orchestrator.get_available_models()
+    
+    def get_available_datasets_v2(self) -> List[str]:
+        """Get list of available datasets via orchestrator"""
+        return self.orchestrator.get_available_datasets()
+    
+    def validate_configuration_v2(self, models: List[str], datasets: List[str]) -> Dict[str, Any]:
+        """Validate that models and datasets are available via orchestrator"""
+        return self.orchestrator.validate_configuration(models, datasets)
 
 def main():
     parser = argparse.ArgumentParser(description="Run LLM evaluation suite")
@@ -986,6 +1084,85 @@ def main():
             sample_limit=args.sample_limit
         )
 
+
+    
+    # New modular evaluation methods using orchestrator
+    def run_comprehensive_evaluation_v2(self, 
+                                       models: List[str],
+                                       datasets: List[str],
+                                       presets: List[str] = None,
+                                       sample_limit: Optional[int] = None,
+                                       save_results: bool = True,
+                                       continue_on_error: bool = True) -> Dict[str, Any]:
+        """
+        Run comprehensive evaluation using the new modular orchestrator
+        
+        Args:
+            models: List of model names to evaluate
+            datasets: List of dataset names to evaluate on
+            presets: List of presets to test (default: ["balanced"])
+            sample_limit: Maximum samples per dataset
+            save_results: Whether to save results to files
+            continue_on_error: Whether to continue evaluation on errors
+        
+        Returns:
+            Dict containing all evaluation results
+        """
+        return self.orchestrator.run_comprehensive_evaluation(
+            models=models,
+            datasets=datasets,
+            presets=presets,
+            sample_limit=sample_limit,
+            save_results=save_results,
+            continue_on_error=continue_on_error
+        )
+    
+    def run_model_comparison_v2(self, 
+                               model_names: List[str],
+                               preset: str = "balanced",
+                               datasets: List[str] = None,
+                               sample_limit: Optional[int] = None) -> Dict[str, Any]:
+        """
+        Run a focused comparison between specific models using orchestrator
+        """
+        return self.orchestrator.run_model_comparison(
+            model_names=model_names,
+            preset=preset,
+            datasets=datasets,
+            sample_limit=sample_limit
+        )
+    
+    def run_preset_comparison_v2(self, 
+                                model_name: str,
+                                presets: List[str] = None,
+                                datasets: List[str] = None,
+                                sample_limit: Optional[int] = None) -> Dict[str, Any]:
+        """
+        Compare different presets for a single model using orchestrator
+        """
+        return self.orchestrator.run_preset_comparison(
+            model_name=model_name,
+            presets=presets,
+            datasets=datasets,
+            sample_limit=sample_limit
+        )
+    
+    def run_single_evaluation_v2(self,
+                                model_name: str,
+                                dataset_name: str,
+                                preset: str = "balanced",
+                                sample_limit: Optional[int] = None) -> Dict[str, Any]:
+        """
+        Run evaluation for a single model-dataset combination using orchestrator
+        """
+        return self.orchestrator.run_single_evaluation(
+            model_name=model_name,
+            dataset_name=dataset_name,
+            preset=preset,
+            sample_limit=sample_limit
+        )
+
+
 def evaluate_model(model_name: str, config, dataset_name: str, 
                   samples: List[Dict[str, Any]], performance_monitor=None) -> Dict[str, Any]:
     """
@@ -1005,69 +1182,59 @@ def evaluate_model(model_name: str, config, dataset_name: str,
         # Create a temporary runner instance
         runner = LLMEvaluationRunner(output_dir="temp_results")
         
-        # Create model instance using the ModelConfig directly
-        model = runner._create_model_instance(model_name, config, "custom")
-        if model is None:
-            raise ValueError(f"Failed to create model instance for {model_name}")
-        
-        # Load the model
-        logger.info(f"Loading model {model_name}...")
-        if not model.load_model():
-            raise ValueError(f"Failed to load model {model_name}")
-        
-        # Prepare dataset in expected format
-        dataset = {
-            "name": dataset_name,
-            "task_type": _get_task_type(dataset_name),
-            "samples": samples
-        }
-        
-        logger.info(f"Starting evaluation: {model_name} on {dataset_name} ({len(samples)} samples)")
-        
-        # Record start time for performance monitoring
-        start_time = time.time()
-        
-        # Run evaluation
-        result = runner._evaluate_on_single_dataset(
-            model=model,
-            dataset=dataset,
-            dataset_name=dataset_name,
+        # Run individual evaluation 
+        result = runner.run_individual_evaluation(
+            model_name, config, "balanced",
             save_predictions=False,
+            prediction_count=0,
+            dataset_filter=[dataset_name],
             sample_limit=len(samples)
         )
         
-        end_time = time.time()
-        
-        # Record tokens processed for performance monitoring
-        if performance_monitor:
-            # Estimate tokens processed (rough calculation)
-            estimated_tokens = len(samples) * 200  # Average tokens per sample
-            performance_monitor.record_tokens_processed(estimated_tokens)
-            performance_monitor.record_request_timing(start_time, end_time)
-        
-        # Add timing information
-        result["evaluation_time_seconds"] = end_time - start_time
-        result["samples_processed"] = len(samples)
-        result["model_name"] = model_name
-        result["dataset_name"] = dataset_name
-        
-        logger.info(f"Evaluation completed: {model_name} on {dataset_name} in {end_time - start_time:.1f}s")
-        
-        # Clean up model resources
-        try:
-            if hasattr(model, 'unload_model'):
-                model.unload_model()
-            elif hasattr(model, 'cleanup'):
-                model.cleanup()
-        except Exception as e:
-            logger.warning(f"Failed to cleanup model resources: {e}")
-        
-        return result
+        return {
+            'model_name': model_name,
+            'dataset': dataset_name,
+            'samples_processed': len(samples),
+            'evaluation_result': result
+        }
         
     except Exception as e:
-        logger.error(f"Evaluation failed for {model_name} on {dataset_name}: {str(e)}")
-        raise e
+        logger.error(f"Evaluation failed for {model_name} on {dataset_name}: {e}")
+        return {
+            'model_name': model_name,
+            'dataset': dataset_name,
+            'error': str(e),
+            'samples_processed': 0
+        }
 
+
+def _get_task_type(dataset_name: str) -> str:
+    """Get task type for dataset"""
+    task_mapping = {
+        'humaneval': 'coding',
+        'mbpp': 'coding',
+        'gsm8k': 'reasoning',
+        'math': 'reasoning',
+        'hellaswag': 'reasoning',
+        'winogrande': 'reasoning',
+        'mmlu': 'qa',
+        'truthfulqa': 'qa',
+        'arc_challenge': 'qa',
+        'arc_easy': 'qa',
+        'boolq': 'qa',
+        'piqa': 'qa',
+        'race': 'qa',
+        'sciq': 'qa',
+        'openbookqa': 'qa',
+        'commonsenseqa': 'qa',
+        'bfcl': 'function_calling',
+        'toolllama': 'function_calling'
+    }
+    return task_mapping.get(dataset_name, 'general')
+
+
+if __name__ == "__main__":
+    main()
 def _get_task_type(dataset_name: str) -> str:
     """Get task type for dataset"""
     task_mapping = {
