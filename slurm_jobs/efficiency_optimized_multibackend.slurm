@@ -26,7 +26,7 @@ echo "Results will be saved to: results/efficiency_optimized_$(date +%Y%m%d_%H%M
 crun -p ~/envs/llm_env python category_evaluation.py \
     --category efficiency_optimized \
     --samples 6 \
-    --preset fast
+    --preset balanced
 
 exit_code=$?
 

@@ -26,7 +26,7 @@ echo "Results will be saved to: results/scientific_research_$(date +%Y%m%d_%H%M%
 crun -p ~/envs/llm_env python category_evaluation.py \
     --category scientific_research \
     --samples 6 \
-    --preset thorough
+    --preset balanced
 
 exit_code=$?
 

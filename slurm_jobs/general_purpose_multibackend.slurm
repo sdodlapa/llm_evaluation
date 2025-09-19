@@ -26,7 +26,7 @@ echo "Results will be saved to: results/general_purpose_$(date +%Y%m%d_%H%M%S)"
 crun -p ~/envs/llm_env python category_evaluation.py \
     --category general_purpose \
     --samples 8 \
-    --preset memory_optimized
+    --preset balanced
 
 exit_code=$?
 

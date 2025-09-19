@@ -26,7 +26,7 @@ echo "Results will be saved to: results/mathematical_reasoning_$(date +%Y%m%d_%H
 crun -p ~/envs/llm_env python category_evaluation.py \
     --category mathematical_reasoning \
     --samples 6 \
-    --preset thorough
+    --preset balanced
 
 exit_code=$?
 
