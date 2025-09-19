@@ -1,10 +1,11 @@
 #!/bin/bash
 #SBATCH --job-name=biomedical_eval
-#SBATCH --partition=h100flex
+#SBATCH --partition=h100dualflex
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=70G
+#SBATCH --gpus=1
 #SBATCH --time=02:30:00
 #SBATCH --output=slurm_jobs/logs/biomedical_specialists_%j.out
 #SBATCH --error=slurm_jobs/logs/biomedical_specialists_%j.err
@@ -26,7 +27,8 @@ echo "Results will be saved to: results/biomedical_specialists_$(date +%Y%m%d_%H
 crun -p ~/envs/llm_env python category_evaluation.py \
     --category biomedical_specialists \
     --samples 8 \
-    --preset balanced
+    --preset balanced \
+    --exclude-models clinical_camel_70b
 
 exit_code=$?
 

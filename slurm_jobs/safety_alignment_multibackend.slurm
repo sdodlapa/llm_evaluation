@@ -5,6 +5,7 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=70G
+#SBATCH --gpus=1
 #SBATCH --time=02:00:00
 #SBATCH --output=slurm_jobs/logs/safety_alignment_%j.out
 #SBATCH --error=slurm_jobs/logs/safety_alignment_%j.err

@@ -5,6 +5,7 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=70G
+#SBATCH --gpus=1
 #SBATCH --time=03:30:00
 #SBATCH --output=slurm_jobs/logs/scientific_research_%j.out
 #SBATCH --error=slurm_jobs/logs/scientific_research_%j.err

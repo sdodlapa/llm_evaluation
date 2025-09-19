@@ -1,12 +1,12 @@
-# Comprehensive Category Evaluation - Job Tracker
-# Submitted at: Fri Sep 19 03:29:11 UTC 2025
-# Total jobs: 8
+# Job Tracker - Comprehensive Category Evaluation
+# Submitted: Fri Sep 19 12:12:45 UTC 2025
+# Jobs: 1632-1639
 
-JOB_ID=1592 CATEGORY="Efficiency Optimized"
-JOB_ID=1593 CATEGORY="Mathematical Reasoning"
-JOB_ID=1594 CATEGORY="Coding Specialists"
-JOB_ID=1595 CATEGORY="General Purpose"
-JOB_ID=1596 CATEGORY="Safety & Alignment"
-JOB_ID=1597 CATEGORY="Scientific Research"
-JOB_ID=1598 CATEGORY="Biomedical Specialists"
-JOB_ID=1599 CATEGORY="Multimodal Processing"
+1632 biomedical_specialists (h100dualflex) - EXCLUDING clinical_camel_70b
+1633 coding_specialists (h100dualflex)
+1634 efficiency_optimized (h100dualflex)
+1635 general_purpose (h100flex)
+1636 mathematical_reasoning (h100dualflex) - EXCLUDING wizardmath_70b metamath_70b
+1637 multimodal_processing (h100flex)
+1638 safety_alignment (h100flex)
+1639 scientific_research (h100flex)

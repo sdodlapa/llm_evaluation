@@ -1,10 +1,11 @@
 #!/bin/bash
 #SBATCH --job-name=mathematical_eval
-#SBATCH --partition=h100flex
+#SBATCH --partition=h100dualflex
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=70G
+#SBATCH --gpus=1
 #SBATCH --time=03:00:00
 #SBATCH --output=slurm_jobs/logs/mathematical_reasoning_%j.out
 #SBATCH --error=slurm_jobs/logs/mathematical_reasoning_%j.err
@@ -26,7 +27,8 @@ echo "Results will be saved to: results/mathematical_reasoning_$(date +%Y%m%d_%H
 crun -p ~/envs/llm_env python category_evaluation.py \
     --category mathematical_reasoning \
     --samples 6 \
-    --preset balanced
+    --preset balanced \
+    --exclude-models wizardmath_70b metamath_70b
 
 exit_code=$?
 

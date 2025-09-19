@@ -1,10 +1,11 @@
 #!/bin/bash
 #SBATCH --job-name=coding_eval
-#SBATCH --partition=h100flex
+#SBATCH --partition=h100dualflex
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=70G
+#SBATCH --gpus=1
 #SBATCH --time=03:00:00
 #SBATCH --output=slurm_jobs/logs/coding_specialists_%j.out
 #SBATCH --error=slurm_jobs/logs/coding_specialists_%j.err
