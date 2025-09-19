@@ -10,17 +10,27 @@
 
 ## ACTIVE SLURM JOBS
 Test Job:
-- Job ID: 1591 (efficiency_optimized) - RUNNING for 3+ minutes on hpcslurm-nsh100flex-1
+- Job ID: 1591 (efficiency_optimized) - RUNNING for 10+ minutes on hpcslurm-nsh100flex-1
 
-Category Evaluation Jobs (Submitted at 2025-09-19 03:29:11 UTC):
-- Job ID: 1592 - Efficiency Optimized (h100flex) - CONFIGURING
-- Job ID: 1593 - Mathematical Reasoning (h100flex) - PENDING  
-- Job ID: 1594 - Coding Specialists (h100dualflex) - CONFIGURING
-- Job ID: 1595 - General Purpose (h100dualflex) - CONFIGURING
-- Job ID: 1596 - Safety & Alignment (h100dualflex) - CONFIGURING
-- Job ID: 1597 - Scientific Research (h100flex) - PENDING
-- Job ID: 1598 - Biomedical Specialists (h100dualflex) - CONFIGURING
-- Job ID: 1599 - Multimodal Processing (h100dualflex) - PENDING
+Category Evaluation Jobs (Fixed and Resubmitted):
+- Job ID: 1592 - Efficiency Optimized (h100flex) - RUNNING
+- Job ID: 1602 - Mathematical Reasoning (h100flex) - PENDING (resubmitted)
+- Job ID: 1594 - Coding Specialists (h100dualflex) - RUNNING  
+- Job ID: 1595 - General Purpose (h100dualflex) - COMPLETED ✅
+- Job ID: 1600 - Safety & Alignment (h100dualflex) - RUNNING (resubmitted)
+- Job ID: 1603 - Scientific Research (h100flex) - PENDING (resubmitted)
+- Job ID: 1598 - Biomedical Specialists (h100dualflex) - RUNNING
+- Job ID: 1601 - Multimodal Processing (h100dualflex) - RUNNING (resubmitted)
+
+## ISSUES RESOLVED
+1. ✅ SLURM file corruption (duplicate headers, syntax errors)
+2. ✅ Argument format errors (--output_dir vs --output-dir, --verbose removal)
+3. ✅ Partition allocation (h100dualflex for intensive, h100flex for lighter)
+4. ✅ Resource optimization (4 CPUs, <80GB memory per user request)
+5. ✅ Integration with existing category_evaluation.py infrastructure
+6. ✅ CRITICAL: Invalid preset arguments fixed (analytical, multimodal, ethical, scientific → balanced)
+7. ✅ Failed jobs resubmitted (1596→1600, 1599→1601)
+8. ✅ Pending jobs with invalid presets canceled and resubmitted (1593→1602, 1597→1603)
 
 ## RESOURCE ALLOCATION
 - **Partitions**: 5 jobs on h100dualflex, 3 jobs on h100flex
