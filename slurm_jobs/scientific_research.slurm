@@ -43,7 +43,7 @@ echo "Results will be saved to: $RESULTS_DIR"
 crun -p ~/envs/llm_env python category_evaluation.py \
     --category scientific_research \
     --samples 15 \
-    --preset scientific \
+    --preset balanced \
     --output-dir "$RESULTS_DIR" \
     
 
