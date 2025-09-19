@@ -44,8 +44,8 @@ crun -p ~/envs/llm_env python category_evaluation.py \
     --category biomedical_specialists \
     --samples 15 \
     --preset balanced \
-    --output_dir "$RESULTS_DIR" \
-    --verbose
+    --output-dir "$RESULTS_DIR" \
+    
 
 EXIT_CODE=$?
 

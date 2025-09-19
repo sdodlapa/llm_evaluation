@@ -44,8 +44,8 @@ crun -p ~/envs/llm_env python category_evaluation.py \
     --category general_purpose \
     --samples 20 \
     --preset balanced \
-    --output_dir "$RESULTS_DIR" \
-    --verbose
+    --output-dir "$RESULTS_DIR" \
+    
 
 EXIT_CODE=$?
 

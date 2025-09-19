@@ -44,8 +44,8 @@ crun -p ~/envs/llm_env python category_evaluation.py \
     --category multimodal_processing \
     --samples 15 \
     --preset multimodal \
-    --output_dir "$RESULTS_DIR" \
-    --verbose
+    --output-dir "$RESULTS_DIR" \
+    
 
 EXIT_CODE=$?
 
