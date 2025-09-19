@@ -439,7 +439,7 @@ class CategoryEvaluationCLI:
                 category = self._get_category_for_model(args.model)
                 if category:
                     evaluation_tasks = self.manager.generate_evaluation_tasks(
-                        category.name,
+                        category,
                         sample_limit=args.samples,
                         include_optional=args.include_optional,
                         specific_models=[args.model]
