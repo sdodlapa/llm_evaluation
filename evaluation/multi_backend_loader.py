@@ -205,18 +205,44 @@ class MultiBackendModelLoader:
     def _load_vllm_model(self, model_id: str, model_config: Any, preset: str) -> tuple[bool, Any]:
         """Load model using vLLM backend"""
         try:
-            # Import the existing vLLM loader from your current system
-            from evaluation.model_management.model_base import ModelInstance
+            # Import vLLM directly and create simple wrapper
+            from vllm import LLM, SamplingParams
+            import torch
             
-            # Create model instance (use your existing implementation)
-            model_instance = ModelInstance.create_instance(model_id, preset)
-            success = model_instance.load_model()
+            huggingface_id = getattr(model_config, 'huggingface_id', model_id)
             
-            if success:
-                self.loaded_models[model_id] = model_instance
-                return True, model_instance
-            else:
-                return False, None
+            # Basic vLLM configuration
+            vllm_args = {
+                "model": huggingface_id,
+                "trust_remote_code": True,
+                "max_model_len": getattr(model_config, 'context_window', 32768),
+                "gpu_memory_utilization": 0.85,
+                "max_num_seqs": 64,
+                "tensor_parallel_size": getattr(model_config, 'tensor_parallel_size', 1),
+                "enable_prefix_caching": True,
+                "block_size": 16
+            }
+            
+            logger.info(f"Loading {model_id} using vLLM backend")
+            llm = LLM(**vllm_args)
+            
+            # Create a simple wrapper
+            class VLLMModelWrapper:
+                def __init__(self, llm_instance, model_name):
+                    self.llm = llm_instance
+                    self.model_name = model_name
+                    
+                def generate(self, prompts, **kwargs):
+                    sampling_params = SamplingParams(
+                        temperature=kwargs.get('temperature', 0.1),
+                        top_p=kwargs.get('top_p', 0.9),
+                        max_tokens=kwargs.get('max_tokens', 1024)
+                    )
+                    return self.llm.generate(prompts, sampling_params)
+            
+            wrapper = VLLMModelWrapper(llm, model_id)
+            self.loaded_models[model_id] = wrapper
+            return True, wrapper
                 
         except Exception as e:
             logger.error(f"vLLM loading failed for {model_id}: {e}")
@@ -280,6 +306,7 @@ class TransformersModelWrapper:
         self.model = model
         self.tokenizer = tokenizer
         self.model_id = model_id
+        self.model_name = model_id  # Add missing model_name attribute
         self._is_loaded = True
     
     def is_loaded(self) -> bool:
