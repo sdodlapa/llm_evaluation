@@ -13,6 +13,7 @@ from .dataset_registry import DatasetInfo, dataset_registry
 from .dataset_loader import DatasetLoader
 from .dataset_processor import DatasetProcessor
 from .dataset_utils import DatasetUtils
+from .dataset_path_manager import dataset_path_manager
 
 logger = logging.getLogger(__name__)
 

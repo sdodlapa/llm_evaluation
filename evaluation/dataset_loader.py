@@ -12,8 +12,10 @@ import logging
 
 try:
     from .dataset_registry import DatasetInfo, dataset_registry
+    from .dataset_path_manager import dataset_path_manager
 except ImportError:
     from evaluation.dataset_registry import DatasetInfo, dataset_registry
+    from evaluation.dataset_path_manager import dataset_path_manager
 
 logger = logging.getLogger(__name__)
 
@@ -35,13 +37,15 @@ class DatasetLoader:
             List of dataset samples
         """
         dataset_info = self.registry.get_dataset_info(dataset_name)
-        data_path = self.base_path / dataset_info.data_path
         
-        if not data_path.exists():
-            raise FileNotFoundError(f"Dataset file not found: {data_path}")
+        # Use path manager for robust path resolution
+        actual_path, exists = dataset_path_manager.resolve_dataset_path(dataset_name, dataset_info.data_path)
+        
+        if not exists:
+            raise FileNotFoundError(f"Dataset file not found: {dataset_info.data_path} (searched multiple locations)")
         
         try:
-            with open(data_path, 'r', encoding='utf-8') as f:
+            with open(actual_path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
                 
             # Handle different data formats

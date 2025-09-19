@@ -38,6 +38,9 @@ from datetime import datetime
 # Add the project root to path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
+# Import custom JSON serialization framework
+from evaluation.json_serializer import safe_json_dump, MLObjectEncoder
+
 # OPTIMIZATION: Lazy imports for faster CLI startup
 # Only import when needed to reduce 20s -> 3s startup time
 
@@ -576,9 +579,10 @@ class CategoryEvaluationCLI:
                             "evaluation_metrics": serializable_metrics,
                             "timestamp": datetime.now().isoformat()
                         }
-                        with open(predictions_file, 'w') as f:
-                            json.dump(prediction_data, f, indent=2)
-                        print(f"📄 Predictions saved: {predictions_file}")
+                        if not safe_json_dump(prediction_data, predictions_file, indent=2):
+                            logger.error(f"Failed to save predictions: {predictions_file}")
+                        else:
+                            print(f"📄 Predictions saved: {predictions_file}")
                     
                     # Add result to session data (without predictions to keep session file smaller)
                     result_copy = result.copy()
@@ -640,8 +644,18 @@ class CategoryEvaluationCLI:
             
             # Save session data after each task
             session_data['end_time'] = datetime.now().isoformat()
-            with open(session_log, 'w') as f:
-                json.dump(session_data, f, indent=2)
+            if not safe_json_dump(session_data, session_log, indent=2):
+                logger.error(f"Failed to save session log: {session_log}")
+                # Fallback: save minimal session data
+                minimal_session = {
+                    "session_id": session_data["session_id"],
+                    "start_time": session_data["start_time"],
+                    "end_time": session_data.get("end_time"),
+                    "total_tasks": session_data["total_tasks"],
+                    "success_count": len([r for r in session_data["results"] if r.get("success")])
+                }
+                with open(str(session_log).replace('.json', '.minimal.json'), 'w') as f:
+                    json.dump(minimal_session, f, indent=2)
         
         # Final summary
         print(f"\n" + "="*60)

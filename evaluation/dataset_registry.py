@@ -4,7 +4,7 @@ Centralized registry for all dataset information and catalog management
 """
 
 import os
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -197,7 +197,7 @@ class DatasetRegistry:
             "bioasq": DatasetInfo(
                 name="bioasq",
                 task_type="biomedical_qa",
-                data_path="scientific/bioasq.json",
+                data_path="biomedical/bioasq.json",
                 metadata_path="meta/bioasq_metadata.json",
                 sample_count=1504,
                 evaluation_type="qa_accuracy",
@@ -207,7 +207,7 @@ class DatasetRegistry:
             "pubmedqa": DatasetInfo(
                 name="pubmedqa",
                 task_type="biomedical_qa",
-                data_path="scientific/pubmedqa.json",
+                data_path="biomedical/pubmedqa.json",
                 metadata_path="meta/pubmedqa_metadata.json",
                 sample_count=1000,
                 evaluation_type="qa_accuracy",
@@ -352,6 +352,11 @@ class DatasetRegistry:
         """Update the implementation status of a dataset"""
         if dataset_name in self.datasets:
             self.datasets[dataset_name].implemented = implemented
+    
+    def validate_registry(self) -> Dict[str, Any]:
+        """Validate all dataset paths and configurations"""
+        from .dataset_path_manager import dataset_path_manager
+        return dataset_path_manager.validate_all_datasets(self)
 
 # Global registry instance
 dataset_registry = DatasetRegistry()

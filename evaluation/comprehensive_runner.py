@@ -14,6 +14,7 @@ import traceback
 
 from .performance_monitor import LivePerformanceMonitor, EvaluationMetrics
 from .dataset_manager import EnhancedDatasetManager
+from .json_serializer import safe_json_dump
 from .run_evaluation import evaluate_model
 
 try:
@@ -55,8 +56,8 @@ class ResultsOrganizer:
         
         # Save raw evaluation result
         raw_file = self.paths['raw_results'] / f"{run_id}_result.json"
-        with open(raw_file, 'w') as f:
-            json.dump(evaluation_result, f, indent=2)
+        if not safe_json_dump(evaluation_result, raw_file, indent=2):
+            logger.error(f"Failed to save raw results: {raw_file}")
         
         # Save performance metrics
         perf_data = {
@@ -102,8 +103,8 @@ class ResultsOrganizer:
         }
         
         perf_file = self.paths['performance_data'] / f"{run_id}_performance.json"
-        with open(perf_file, 'w') as f:
-            json.dump(perf_data, f, indent=2)
+        if not safe_json_dump(perf_data, perf_file, indent=2):
+            logger.error(f"Failed to save performance data: {perf_file}")
         
         # Save combined result
         combined_result = {
@@ -119,8 +120,8 @@ class ResultsOrganizer:
         }
         
         combined_file = self.paths['aggregated_metrics'] / f"{run_id}_combined.json"
-        with open(combined_file, 'w') as f:
-            json.dump(combined_result, f, indent=2)
+        if not safe_json_dump(combined_result, combined_file, indent=2):
+            logger.error(f"Failed to save combined results: {combined_file}")
         
         logger.info(f"Saved results for {run_id}")
         return run_id
@@ -393,8 +394,8 @@ class ComprehensiveEvaluationRunner:
                     
                     # Save intermediate results
                     intermediate_file = self.results_organizer.base_path / "intermediate_results.json"
-                    with open(intermediate_file, 'w') as f:
-                        json.dump(self.all_results, f, indent=2, default=str)
+                    if not safe_json_dump(self.all_results, intermediate_file, indent=2):
+                        logger.error(f"Failed to save intermediate results: {intermediate_file}")
                 
                 if not continue_on_failure and any(r.get('status') == 'error' for r in self.all_results[-len(datasets):]):
                     break
@@ -423,14 +424,10 @@ class ComprehensiveEvaluationRunner:
         
         # Save final results
         final_file = self.results_organizer.base_path / f"final_comprehensive_results_{start_time.strftime('%Y%m%d_%H%M%S')}.json"
-        with open(final_file, 'w') as f:
-            json.dump(summary, f, indent=2, default=str)
-        
-        # Generate report
-        report_file = self.results_organizer.generate_summary_report(self.all_results)
-        
-        logger.info(f"Comprehensive evaluation completed in {total_duration/3600:.1f} hours")
-        logger.info(f"Results saved to: {final_file}")
+        if not safe_json_dump(summary, final_file, indent=2):
+            logger.error(f"Failed to save final results: {final_file}")
+        else:
+            logger.info(f"Results saved to: {final_file}")
         logger.info(f"Report generated: {report_file}")
         
         return summary
