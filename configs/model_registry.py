@@ -883,6 +883,94 @@ MODEL_CONFIGS = {
         agent_temperature=0.0,
         max_function_calls_per_turn=3,
         evaluation_batch_size=32
+    ),
+
+    # ================================
+    # ADDITIONAL MULTIMODAL MODELS  
+    # ================================
+    
+    "qwen25_vl_7b": ModelConfig(
+        model_name="Qwen2.5-VL 7B Instruct",
+        huggingface_id="Qwen/Qwen2.5-VL-7B-Instruct",
+        license="Apache 2.0",
+        size_gb=16.0,
+        context_window=32768,
+        preset="balanced",
+        specialization_category="multimodal",
+        specialization_subcategory="vision_language_understanding",
+        primary_use_cases=["visual_qa", "document_understanding", "multimodal_reasoning", "chart_analysis"],
+        quantization_method="none",
+        max_model_len=32768,
+        gpu_memory_utilization=0.90,
+        trust_remote_code=True,
+        priority="HIGH",
+        agent_optimized=True,
+        agent_temperature=0.2,
+        max_function_calls_per_turn=5,
+        evaluation_batch_size=4  # Smaller for multimodal
+    ),
+    
+    "minicpm_v_26": ModelConfig(
+        model_name="MiniCPM-V 2.6",
+        huggingface_id="openbmb/MiniCPM-V-2_6",
+        license="Apache 2.0",
+        size_gb=16.8,
+        context_window=8192,
+        preset="balanced",
+        specialization_category="multimodal", 
+        specialization_subcategory="efficient_multimodal",
+        primary_use_cases=["visual_qa", "multimodal_chat", "document_analysis", "video_understanding"],
+        quantization_method="none",
+        max_model_len=8192,
+        gpu_memory_utilization=0.90,
+        trust_remote_code=True,
+        priority="HIGH",
+        agent_optimized=True,
+        agent_temperature=0.2,
+        max_function_calls_per_turn=5,
+        evaluation_batch_size=4
+    ),
+    
+    "llava_next_vicuna_7b": ModelConfig(
+        model_name="LLaVA-NeXT Vicuna 7B",
+        huggingface_id="llava-hf/llava-v1.6-vicuna-7b-hf",
+        license="Apache 2.0",
+        size_gb=15.0,
+        context_window=4096,
+        preset="balanced",
+        specialization_category="multimodal",
+        specialization_subcategory="vision_language_chat",
+        primary_use_cases=["visual_instruction_following", "multimodal_conversation"],
+        quantization_method="none",
+        max_model_len=4096,
+        gpu_memory_utilization=0.85,
+        trust_remote_code=True,
+        priority="MEDIUM",
+        agent_optimized=True,
+        agent_temperature=0.2,
+        max_function_calls_per_turn=5,
+        evaluation_batch_size=4
+    ),
+    
+    "internvl2_8b": ModelConfig(
+        model_name="InternVL2 8B", 
+        huggingface_id="OpenGVLab/InternVL2-8B",
+        license="MIT",
+        size_gb=18.0,
+        context_window=8192,
+        preset="balanced",
+        specialization_category="multimodal",
+        specialization_subcategory="advanced_vision_language",
+        primary_use_cases=["complex_visual_reasoning", "document_understanding", "chart_analysis"],
+        quantization_method="none",
+        max_model_len=8192,
+        gpu_memory_utilization=0.90,
+        trust_remote_code=True,
+        priority="HIGH",
+        agent_optimized=True,
+        agent_temperature=0.1,  # Lower for precise analysis
+        max_function_calls_per_turn=5,
+        evaluation_batch_size=4
     )
 }
 

@@ -181,22 +181,30 @@ MULTIMODAL_PROCESSING = {
     'models': [
         'qwen2_vl_7b',
         'donut_base',
-        'layoutlmv3_base'
+        'layoutlmv3_base',
+        'qwen25_vl_7b',
+        'minicpm_v_26',
+        'llava_next_vicuna_7b',
+        'internvl2_8b'
     ],
     'primary_datasets': [
         "docvqa",
-        "multimodal_sample"
+        "multimodal_sample",
+        "ai2d",
+        "scienceqa"
     ],
     'optional_datasets': [
         "chartqa",
-        "scienceqa"
+        "textcqa"
     ],
     'evaluation_metrics': [
         "multimodal_accuracy",
         "visual_reasoning_score",
         "document_understanding",
         "text_extraction_accuracy",
-        "question_answering_precision"
+        "question_answering_precision",
+        "chart_comprehension",
+        "scientific_diagram_understanding"
     ],
     'category_config': {
         "default_sample_limit": 25,  # Smaller batches for multimodal
