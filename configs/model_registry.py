@@ -771,6 +771,118 @@ MODEL_CONFIGS = {
         agent_temperature=0.0,
         max_function_calls_per_turn=5,
         evaluation_batch_size=16
+    ),
+
+    # ================================
+    # EFFICIENCY OPTIMIZED MODELS (Phase 2)
+    # ================================
+
+    "qwen25_0_5b": ModelConfig(
+        model_name="Qwen2.5 0.5B",
+        huggingface_id="Qwen/Qwen2.5-0.5B-Instruct",
+        license="Apache 2.0",
+        size_gb=0.5,
+        context_window=32768,
+        preset="performance",
+        specialization_category="efficiency",
+        specialization_subcategory="ultra_lightweight",
+        primary_use_cases=["edge_deployment", "fast_inference", "resource_constrained"],
+        quantization_method="none",  # Already very small
+        max_model_len=32768,
+        gpu_memory_utilization=0.30,  # Very low usage
+        priority="HIGH",
+        agent_optimized=True,
+        agent_temperature=0.2,
+        max_function_calls_per_turn=3,
+        evaluation_batch_size=64  # Large batches for small model
+    ),
+
+    "qwen25_3b": ModelConfig(
+        model_name="Qwen2.5 3B",
+        huggingface_id="Qwen/Qwen2.5-3B-Instruct",
+        license="Apache 2.0",
+        size_gb=3.0,
+        context_window=32768,
+        preset="balanced",
+        specialization_category="efficiency",
+        specialization_subcategory="lightweight_performance",
+        primary_use_cases=["balanced_efficiency", "moderate_tasks", "cost_optimization"],
+        quantization_method="awq",  # Available for better efficiency
+        max_model_len=32768,
+        gpu_memory_utilization=0.60,
+        priority="HIGH",
+        agent_optimized=True,
+        agent_temperature=0.2,
+        max_function_calls_per_turn=5,
+        evaluation_batch_size=32
+    ),
+
+    # ================================
+    # GENERAL PURPOSE MODELS (Phase 3)
+    # ================================
+
+    "mistral_nemo_12b": ModelConfig(
+        model_name="Mistral Nemo 12B",
+        huggingface_id="mistralai/Mistral-Nemo-Instruct-2407",
+        license="Apache 2.0",
+        size_gb=12.0,
+        context_window=128000,
+        preset="balanced",
+        specialization_category="general",
+        specialization_subcategory="general_purpose",
+        primary_use_cases=["general_chat", "reasoning", "knowledge_tasks"],
+        quantization_method="awq",
+        max_model_len=32768,
+        gpu_memory_utilization=0.85,
+        priority="MEDIUM",
+        agent_optimized=True,
+        agent_temperature=0.3,
+        max_function_calls_per_turn=5,
+        evaluation_batch_size=16
+    ),
+
+    "yi_1_5_34b": ModelConfig(
+        model_name="Yi-1.5 34B Chat",
+        huggingface_id="01-ai/Yi-1.5-34B-Chat",
+        license="Apache 2.0",
+        size_gb=34.0,
+        context_window=4096,
+        preset="memory_optimized",
+        specialization_category="general",
+        specialization_subcategory="large_general_purpose",
+        primary_use_cases=["complex_reasoning", "knowledge_intensive", "detailed_analysis"],
+        quantization_method="awq",  # Required for 34B model
+        max_model_len=4096,
+        gpu_memory_utilization=0.90,
+        priority="LOW",  # Large model, lower priority
+        agent_optimized=True,
+        agent_temperature=0.3,
+        max_function_calls_per_turn=5,
+        evaluation_batch_size=4  # Small batches for large model
+    ),
+
+    # ================================
+    # SAFETY ALIGNMENT MODELS (Phase 3)
+    # ================================
+
+    "safety_bert": ModelConfig(
+        model_name="Safety BERT",
+        huggingface_id="unitary/toxic-bert",  # Using available toxicity detection model
+        license="Apache 2.0",
+        size_gb=0.4,
+        context_window=512,
+        preset="performance",
+        specialization_category="safety",
+        specialization_subcategory="toxicity_detection",
+        primary_use_cases=["toxicity_detection", "content_moderation", "safety_filtering"],
+        quantization_method="none",  # BERT-style model
+        max_model_len=512,
+        gpu_memory_utilization=0.50,
+        priority="HIGH",
+        agent_optimized=False,  # Classification model
+        agent_temperature=0.0,
+        max_function_calls_per_turn=3,
+        evaluation_batch_size=32
     )
 }
 

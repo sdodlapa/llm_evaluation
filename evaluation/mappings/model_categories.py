@@ -257,6 +257,137 @@ SCIENTIFIC_RESEARCH = {
 
 
 # ================================
+# EFFICIENCY OPTIMIZED CATEGORY
+# ================================
+
+EFFICIENCY_OPTIMIZED = {
+    'models': [
+        'qwen25_0_5b',
+        'qwen25_3b', 
+        'phi35_mini'
+    ],
+    'primary_datasets': [
+        "humaneval",      # Lighter coding tasks
+        "gsm8k",          # Basic reasoning
+        "arc_challenge"   # Simple QA
+    ],
+    'optional_datasets': [
+        "hellaswag",
+        "truthfulness_fixed"
+    ],
+    'evaluation_metrics': [
+        "efficiency_score",
+        "latency",
+        "accuracy_per_parameter",
+        "memory_efficiency",
+        "throughput_optimization"
+    ],
+    'category_config': {
+        "default_sample_limit": 50,  # Larger batches for efficient models
+        "timeout_per_sample": 30,   # Faster timeout for lightweight models
+        "max_tokens": 512,
+        "temperature": 0.2,         # Balanced temperature for efficiency
+        "top_p": 0.9,
+        "stop_sequences": ["Question:", "Answer:", "\n\n"],
+        "enable_efficiency_tracking": True,
+        "enable_latency_monitoring": True,
+        "save_performance_metrics": True,
+        "optimize_for_throughput": True
+    },
+    'priority': "HIGH",
+    'phase': "2"
+}
+
+
+# ================================
+# GENERAL PURPOSE CATEGORY
+# ================================
+
+GENERAL_PURPOSE = {
+    'models': [
+        'llama31_8b',
+        'mistral_7b',
+        'mistral_nemo_12b',
+        'olmo2_13b',
+        'yi_9b',
+        'yi_1_5_34b',
+        'gemma2_9b'
+    ],
+    'primary_datasets': [
+        "arc_challenge",
+        "hellaswag",
+        "mt_bench",
+        "mmlu"
+    ],
+    'optional_datasets': [
+        "truthfulness_fixed"
+    ],
+    'evaluation_metrics': [
+        "multiple_choice_accuracy",
+        "llm_judge_score",
+        "coherence",
+        "general_reasoning",
+        "knowledge_breadth"
+    ],
+    'category_config': {
+        "default_sample_limit": 30,  # Moderate batches for general models
+        "timeout_per_sample": 45,   # Standard timeout
+        "max_tokens": 1024,
+        "temperature": 0.3,         # Moderate temperature for balanced responses
+        "top_p": 0.9,
+        "stop_sequences": ["Question:", "Answer:", "Conclusion:", "\n\n"],
+        "enable_general_reasoning": True,
+        "enable_knowledge_assessment": True,
+        "save_reasoning_traces": True,
+        "require_coherent_responses": True
+    },
+    'priority': "MEDIUM",
+    'phase': "3"
+}
+
+
+# ================================
+# SAFETY ALIGNMENT CATEGORY
+# ================================
+
+SAFETY_ALIGNMENT = {
+    'models': [
+        'safety_bert',
+        'biomistral_7b',  # Can be used for safety evaluation
+        'qwen25_7b'       # General model for safety testing
+    ],
+    'primary_datasets': [
+        "toxicity_detection",
+        "truthfulness_fixed"
+    ],
+    'optional_datasets': [
+        "safety_eval"
+    ],
+    'evaluation_metrics': [
+        "safety_score",
+        "toxicity_detection_f1",
+        "bias_assessment",
+        "harm_prevention",
+        "ethical_alignment"
+    ],
+    'category_config': {
+        "default_sample_limit": 25,  # Smaller batches for careful safety evaluation
+        "timeout_per_sample": 60,   # Longer timeout for safety analysis
+        "max_tokens": 512,
+        "temperature": 0.1,         # Low temperature for consistent safety responses
+        "top_p": 0.9,
+        "stop_sequences": ["Question:", "Answer:", "Warning:", "\n\n"],
+        "enable_safety_filtering": True,
+        "enable_bias_detection": True,
+        "save_safety_analysis": True,
+        "require_safe_responses": True
+    },
+    'priority': "HIGH",
+    'phase': "3"
+}
+
+
+# ================================
 # CATEGORY REGISTRY
 # ================================
 
@@ -266,7 +397,10 @@ CATEGORY_REGISTRY = {
     "mathematical_reasoning": MATHEMATICAL_REASONING,
     "biomedical_specialists": BIOMEDICAL_SPECIALISTS,
     "multimodal_processing": MULTIMODAL_PROCESSING,
-    "scientific_research": SCIENTIFIC_RESEARCH
+    "scientific_research": SCIENTIFIC_RESEARCH,
+    "efficiency_optimized": EFFICIENCY_OPTIMIZED,
+    "general_purpose": GENERAL_PURPOSE,
+    "safety_alignment": SAFETY_ALIGNMENT
 }
 
 # Alias for compatibility with different import patterns
@@ -275,7 +409,10 @@ MODEL_CATEGORIES = {
     "MATHEMATICAL_REASONING": MATHEMATICAL_REASONING['models'],
     "BIOMEDICAL_SPECIALISTS": BIOMEDICAL_SPECIALISTS['models'],
     "MULTIMODAL_PROCESSING": MULTIMODAL_PROCESSING['models'],
-    "SCIENTIFIC_RESEARCH": SCIENTIFIC_RESEARCH['models']
+    "SCIENTIFIC_RESEARCH": SCIENTIFIC_RESEARCH['models'],
+    "EFFICIENCY_OPTIMIZED": EFFICIENCY_OPTIMIZED['models'],
+    "GENERAL_PURPOSE": GENERAL_PURPOSE['models'],
+    "SAFETY_ALIGNMENT": SAFETY_ALIGNMENT['models']
 }
 
 
