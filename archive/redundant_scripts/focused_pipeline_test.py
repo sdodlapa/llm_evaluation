@@ -30,6 +30,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from evaluation.run_evaluation import run_single_evaluation
 from evaluation.dataset_manager import get_dataset_manager
 from configs.model_configs import get_all_model_configs
+from evaluation.json_serializer import safe_json_dump
 
 # Configure logging
 logging.basicConfig(
@@ -303,8 +304,11 @@ class FocusedPipelineTest:
             "test_plan": test_plan
         }
         
-        with open(results_file, 'w') as f:
-            json.dump(detailed_results, f, indent=2, default=str)
+        if not safe_json_dump(detailed_results, results_file, indent=2):
+            logger.error(f"Failed to save results: {results_file}")
+            # Fallback to basic json
+            with open(results_file, 'w') as f:
+                json.dump(detailed_results, f, indent=2, default=str)
         
         # Final recommendations
         if success_rate >= 90:

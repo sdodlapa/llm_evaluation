@@ -28,6 +28,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 # Import working components
 from configs.model_configs import MODEL_CONFIGS
 from models.registry import model_registry
+from evaluation.json_serializer import safe_json_dump
 
 # Configure logging
 logging.basicConfig(
@@ -318,7 +319,10 @@ class SimpleEvaluationRunner:
         }
         
         with open(results_file, 'w') as f:
-            json.dump(summary, f, indent=2, default=str)
+            if not safe_json_dump(summary, results_file, indent=2):
+                logger.error(f"Failed to save results: {results_file}")
+                # Fallback to basic json
+                json.dump(summary, f, indent=2, default=str)
         
         # Final assessment
         if success_rate >= 90:
