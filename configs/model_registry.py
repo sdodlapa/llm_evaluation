@@ -643,6 +643,134 @@ MODEL_CONFIGS = {
         agent_temperature=0.2,  # Slightly higher for text generation
         max_function_calls_per_turn=8,
         evaluation_batch_size=12
+    ),
+
+    # ================================
+    # MULTIMODAL PROCESSING MODELS (Phase 2)
+    # ================================
+
+    "qwen2_vl_7b": ModelConfig(
+        model_name="Qwen2-VL 7B Instruct",
+        huggingface_id="Qwen/Qwen2-VL-7B-Instruct",
+        license="Apache 2.0",
+        size_gb=7.5,
+        context_window=32768,
+        preset="balanced",
+        specialization_category="multimodal",
+        specialization_subcategory="visual_language_understanding",
+        primary_use_cases=["document_vqa", "visual_reasoning", "multimodal_chat"],
+        quantization_method="awq",  # AWQ supported for Qwen2-VL
+        max_model_len=32768,
+        gpu_memory_utilization=0.85,
+        priority="HIGH",
+        agent_optimized=True,
+        agent_temperature=0.2,
+        max_function_calls_per_turn=5,
+        evaluation_batch_size=8  # Smaller batches for multimodal
+    ),
+
+    "donut_base": ModelConfig(
+        model_name="Donut Base OCR",
+        huggingface_id="naver-clova-ix/donut-base-finetuned-docvqa", 
+        license="MIT",
+        size_gb=0.8,
+        context_window=1024,
+        preset="performance",
+        specialization_category="multimodal",
+        specialization_subcategory="document_understanding",
+        primary_use_cases=["document_ocr", "document_vqa", "visual_text_extraction"],
+        quantization_method="none",  # Specialized model, no quantization
+        max_model_len=1024,
+        gpu_memory_utilization=0.60,
+        priority="MEDIUM",
+        agent_optimized=False,  # Specialized for specific tasks
+        agent_temperature=0.1,
+        max_function_calls_per_turn=3,
+        evaluation_batch_size=16
+    ),
+
+    "layoutlmv3_base": ModelConfig(
+        model_name="LayoutLMv3 Base",
+        huggingface_id="microsoft/layoutlmv3-base",
+        license="MIT", 
+        size_gb=0.4,
+        context_window=512,
+        preset="performance",
+        specialization_category="multimodal",
+        specialization_subcategory="document_layout_understanding",
+        primary_use_cases=["document_layout", "form_understanding", "table_extraction"],
+        quantization_method="none",  # BERT-style model
+        max_model_len=512,
+        gpu_memory_utilization=0.50,
+        priority="MEDIUM",
+        agent_optimized=False,  # Specialized BERT-style model
+        agent_temperature=0.0,
+        max_function_calls_per_turn=3,
+        evaluation_batch_size=32
+    ),
+
+    # ================================
+    # SCIENTIFIC RESEARCH MODELS (Phase 2)
+    # ================================
+
+    "scibert_base": ModelConfig(
+        model_name="SciBERT Base",
+        huggingface_id="allenai/scibert_scivocab_uncased",
+        license="Apache 2.0",
+        size_gb=0.4,
+        context_window=512,
+        preset="performance",
+        specialization_category="scientific_research",
+        specialization_subcategory="scientific_language_understanding",
+        primary_use_cases=["scientific_text_analysis", "research_paper_understanding", "scientific_ner"],
+        quantization_method="none",  # BERT-style model
+        max_model_len=512,
+        gpu_memory_utilization=0.50,
+        priority="HIGH",
+        agent_optimized=False,  # BERT-style, not generative
+        agent_temperature=0.0,
+        max_function_calls_per_turn=3,
+        evaluation_batch_size=32
+    ),
+
+    "specter2_base": ModelConfig(
+        model_name="SPECTER2 Base",
+        huggingface_id="allenai/specter2_base",
+        license="Apache 2.0",
+        size_gb=0.4,
+        context_window=512,
+        preset="performance",
+        specialization_category="scientific_research",
+        specialization_subcategory="scientific_document_embeddings",
+        primary_use_cases=["scientific_paper_similarity", "citation_recommendation", "research_clustering"],
+        quantization_method="none",  # BERT-style model
+        max_model_len=512,
+        gpu_memory_utilization=0.50,
+        priority="MEDIUM",
+        agent_optimized=False,  # Embedding model
+        agent_temperature=0.0,
+        max_function_calls_per_turn=3,
+        evaluation_batch_size=32
+    ),
+
+    "longformer_large": ModelConfig(
+        model_name="Longformer Large",
+        huggingface_id="allenai/longformer-large-4096",
+        license="Apache 2.0",
+        size_gb=1.2,
+        context_window=4096,
+        preset="balanced",
+        specialization_category="scientific_research",
+        specialization_subcategory="long_document_understanding",
+        primary_use_cases=["long_scientific_papers", "document_summarization", "long_context_qa"],
+        quantization_method="none",  # BERT-style architecture
+        max_model_len=4096,
+        gpu_memory_utilization=0.70,
+        priority="MEDIUM",
+        agent_optimized=False,  # BERT-style model
+        agent_temperature=0.0,
+        max_function_calls_per_turn=5,
+        evaluation_batch_size=16
     )
 }
 

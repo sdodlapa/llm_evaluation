@@ -174,6 +174,89 @@ MATHEMATICAL_REASONING = {
 
 
 # ================================
+# MULTIMODAL PROCESSING CATEGORY
+# ================================
+
+MULTIMODAL_PROCESSING = {
+    'models': [
+        'qwen2_vl_7b',
+        'donut_base',
+        'layoutlmv3_base'
+    ],
+    'primary_datasets': [
+        "docvqa",
+        "multimodal_sample"
+    ],
+    'optional_datasets': [
+        "chartqa",
+        "scienceqa"
+    ],
+    'evaluation_metrics': [
+        "multimodal_accuracy",
+        "visual_reasoning_score",
+        "document_understanding",
+        "text_extraction_accuracy",
+        "question_answering_precision"
+    ],
+    'category_config': {
+        "default_sample_limit": 25,  # Smaller batches for multimodal
+        "timeout_per_sample": 60,   # Longer timeout for complex processing
+        "max_tokens": 512,
+        "temperature": 0.2,         # Low temperature for precise understanding
+        "top_p": 0.9,
+        "stop_sequences": ["Question:", "Answer:", "\n\n"],
+        "enable_visual_processing": True,
+        "enable_document_analysis": True,
+        "save_visual_attention": False,  # Would require additional processing
+        "require_confident_answers": True
+    },
+    'priority': "HIGH",
+    'phase': "2"
+}
+
+
+# ================================
+# SCIENTIFIC RESEARCH CATEGORY
+# ================================
+
+SCIENTIFIC_RESEARCH = {
+    'models': [
+        'scibert_base',
+        'specter2_base', 
+        'longformer_large'
+    ],
+    'primary_datasets': [
+        "scientific_papers",
+        "scierc"
+    ],
+    'optional_datasets': [
+        "pubmed_abstracts"
+    ],
+    'evaluation_metrics': [
+        "scientific_accuracy",
+        "citation_relevance",
+        "domain_knowledge_score",
+        "technical_comprehension",
+        "research_quality_assessment"
+    ],
+    'category_config': {
+        "default_sample_limit": 20,  # Smaller batches for complex scientific texts
+        "timeout_per_sample": 90,   # Longer timeout for complex scientific reasoning
+        "max_tokens": 1024,
+        "temperature": 0.1,         # Low temperature for precise scientific understanding
+        "top_p": 0.9,
+        "stop_sequences": ["Question:", "Answer:", "Conclusion:", "\n\n\n"],
+        "enable_technical_validation": True,
+        "enable_citation_analysis": True,
+        "save_scientific_reasoning": True,
+        "require_evidence_based_answers": True
+    },
+    'priority': "HIGH",
+    'phase': "2"
+}
+
+
+# ================================
 # CATEGORY REGISTRY
 # ================================
 
@@ -181,14 +264,18 @@ MATHEMATICAL_REASONING = {
 CATEGORY_REGISTRY = {
     "coding_specialists": CODING_SPECIALISTS,
     "mathematical_reasoning": MATHEMATICAL_REASONING,
-    "biomedical_specialists": BIOMEDICAL_SPECIALISTS
+    "biomedical_specialists": BIOMEDICAL_SPECIALISTS,
+    "multimodal_processing": MULTIMODAL_PROCESSING,
+    "scientific_research": SCIENTIFIC_RESEARCH
 }
 
 # Alias for compatibility with different import patterns
 MODEL_CATEGORIES = {
     "CODING_SPECIALISTS": CODING_SPECIALISTS['models'],
     "MATHEMATICAL_REASONING": MATHEMATICAL_REASONING['models'],
-    "BIOMEDICAL_SPECIALISTS": BIOMEDICAL_SPECIALISTS['models']
+    "BIOMEDICAL_SPECIALISTS": BIOMEDICAL_SPECIALISTS['models'],
+    "MULTIMODAL_PROCESSING": MULTIMODAL_PROCESSING['models'],
+    "SCIENTIFIC_RESEARCH": SCIENTIFIC_RESEARCH['models']
 }
 
 
