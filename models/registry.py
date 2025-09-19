@@ -17,10 +17,11 @@ logger = logging.getLogger(__name__)
 
 
 def create_generic_model(model_name: str, preset: str = "balanced", cache_dir: Optional[str] = None):
-    """Generic model creation function that works with any model in the configuration system"""
+    """Generic model creation function that works with any model using multi-backend approach"""
     try:
         # Import here to avoid circular imports
         from configs.model_configs import MODEL_CONFIGS
+        from evaluation.multi_backend_loader import create_multi_backend_loader
         
         if model_name not in MODEL_CONFIGS:
             logger.error(f"Model {model_name} not found in configuration system")
@@ -28,31 +29,31 @@ def create_generic_model(model_name: str, preset: str = "balanced", cache_dir: O
         
         model_config = MODEL_CONFIGS[model_name]
         
-        # For now, use QwenImplementation as the base implementation for all models
-        # This is a simplification - in a full system, we'd have different implementations
-        # for different model families (Qwen, LLaMA, Mistral, BioGPT, etc.)
-        logger.info(f"Creating {model_name} using generic implementation with preset: {preset}")
+        logger.info(f"Creating {model_name} using multi-backend approach with preset: {preset}")
         
-        model_instance = Qwen3Implementation(
-            config=model_config.create_preset_variant(preset)
-        )
+        # Create multi-backend loader
+        loader = create_multi_backend_loader()
         
-        logger.info(f"Model instance created. Attempting to load model...")
+        # Try to load the model using appropriate backend
+        success, model_instance = loader.load_model(model_name, model_config, preset)
         
-        # Load the model after creation
-        load_success = model_instance.load_model()
-        logger.info(f"Model load_model() returned: {load_success}")
-        logger.info(f"Model is_loaded status: {model_instance.is_loaded}")
-        
-        if not load_success:
-            logger.error(f"Failed to load model {model_name} - load_model() returned False")
-            return None
+        if not success or model_instance is None:
+            logger.error(f"Failed to load model {model_name} using multi-backend approach")
             
-        # Double-check that model is actually loaded
-        if not model_instance.is_loaded:
-            logger.error(f"Model {model_name} load_model() succeeded but is_loaded is False")
-            return None
-            
+            # Fallback to original Qwen implementation for compatible models
+            if any(x in model_name.lower() for x in ['qwen', 'phi']):
+                logger.info(f"Falling back to QwenImplementation for {model_name}")
+                model_instance = Qwen3Implementation(
+                    config=model_config.create_preset_variant(preset)
+                )
+                
+                load_success = model_instance.load_model()
+                if not load_success or not model_instance.is_loaded:
+                    logger.error(f"Fallback also failed for {model_name}")
+                    return None
+            else:
+                return None
+        
         logger.info(f"✅ Model {model_name} successfully loaded and ready")
         return model_instance
         
