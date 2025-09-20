@@ -18,6 +18,7 @@ from core_shared.interfaces.evaluation_interfaces import (
 from core_shared.model_registry.enhanced_model_config import EnhancedModelConfig
 from .model_loader import LightweightModelLoader
 from .performance_optimizer import LightweightPerformanceOptimizer
+from .evaluation_logic import LightweightEvaluationLogic
 
 
 logger = logging.getLogger(__name__)
@@ -49,6 +50,7 @@ class LightweightEvaluationEngine(EvaluationEngine):
         # Engine components
         self.model_loader = LightweightModelLoader()
         self.performance_optimizer = LightweightPerformanceOptimizer()
+        self.evaluation_logic = LightweightEvaluationLogic()
         
         # State management
         self._loaded_models: Dict[str, Any] = {}
@@ -76,6 +78,10 @@ class LightweightEvaluationEngine(EvaluationEngine):
             
             if not self.performance_optimizer.initialize():
                 logger.error("Failed to initialize performance optimizer")
+                return False
+            
+            if not self.evaluation_logic.initialize():
+                logger.error("Failed to initialize evaluation logic")
                 return False
             
             self._is_initialized = True
@@ -170,12 +176,20 @@ class LightweightEvaluationEngine(EvaluationEngine):
             total_tokens = 0
             
             for dataset_name in request.datasets:
-                dataset_metrics, dataset_outputs, dataset_tokens = self._evaluate_on_dataset(
-                    model, tokenizer, dataset_name, request.evaluation_params
-                )
-                all_metrics[dataset_name] = dataset_metrics
-                all_outputs.extend(dataset_outputs)
-                total_tokens += dataset_tokens
+                try:
+                    dataset_metrics, dataset_outputs, dataset_tokens = self.evaluation_logic.evaluate_on_dataset(
+                        model, tokenizer, dataset_name, model_config, request.evaluation_params
+                    )
+                    all_metrics[dataset_name] = dataset_metrics
+                    all_outputs.extend(dataset_outputs)
+                    total_tokens += dataset_tokens
+                    
+                    logger.info(f"Completed evaluation on {dataset_name}: {dataset_tokens} tokens processed")
+                    
+                except Exception as e:
+                    logger.error(f"Failed to evaluate on dataset {dataset_name}: {e}")
+                    # Continue with other datasets
+                    all_metrics[dataset_name] = {"error": str(e), "samples_processed": 0}
             
             # Calculate performance metrics
             end_time = time.time()
@@ -239,6 +253,13 @@ class LightweightEvaluationEngine(EvaluationEngine):
         self._loaded_models.clear()
         self._model_configs.clear()
         self._evaluation_stats.clear()
+        
+        # Clean up components
+        if hasattr(self.evaluation_logic, '_evaluation_cache'):
+            self.evaluation_logic._evaluation_cache.clear()
+        
+        if hasattr(self.performance_optimizer, 'cleanup_memory'):
+            self.performance_optimizer.cleanup_memory()
         
         # Clean up GPU memory
         if torch.cuda.is_available():
@@ -309,27 +330,6 @@ class LightweightEvaluationEngine(EvaluationEngine):
         
         self._unload_model(oldest_key)
     
-    def _evaluate_on_dataset(self, model: Any, tokenizer: Any, dataset_name: str, 
-                           eval_params: Dict[str, Any]) -> tuple:
-        """Evaluate model on a specific dataset"""
-        # This is a simplified implementation
-        # In practice, this would integrate with the existing evaluation framework
-        
-        logger.info(f"Evaluating on dataset {dataset_name}")
-        
-        # Placeholder implementation
-        metrics = {
-            "accuracy": 0.85,
-            "f1_score": 0.82,
-            "latency_ms": 50.0,
-            "samples_evaluated": 100
-        }
-        
-        outputs = [f"Sample output {i}" for i in range(10)]
-        tokens_processed = 1000
-        
-        return metrics, outputs, tokens_processed
-    
     def _aggregate_metrics(self, all_metrics: Dict[str, Dict[str, Any]]) -> Dict[str, float]:
         """Aggregate metrics across datasets"""
         aggregated = {}
@@ -337,20 +337,27 @@ class LightweightEvaluationEngine(EvaluationEngine):
         if not all_metrics:
             return aggregated
         
-        # Get all metric names
+        # Get all metric names across datasets
         all_metric_names = set()
         for dataset_metrics in all_metrics.values():
-            all_metric_names.update(dataset_metrics.keys())
+            if isinstance(dataset_metrics, dict):
+                all_metric_names.update(k for k, v in dataset_metrics.items() 
+                                      if isinstance(v, (int, float)) and not k.startswith('error'))
         
-        # Calculate averages
+        # Calculate aggregated metrics
         for metric_name in all_metric_names:
             values = []
             for dataset_metrics in all_metrics.values():
-                if metric_name in dataset_metrics:
-                    values.append(dataset_metrics[metric_name])
+                if isinstance(dataset_metrics, dict) and metric_name in dataset_metrics:
+                    value = dataset_metrics[metric_name]
+                    if isinstance(value, (int, float)):
+                        values.append(value)
             
             if values:
-                aggregated[metric_name] = sum(values) / len(values)
+                if metric_name in ['samples_processed', 'tokens_processed']:
+                    aggregated[metric_name] = sum(values)  # Sum for counts
+                else:
+                    aggregated[metric_name] = sum(values) / len(values)  # Average for rates/scores
         
         return aggregated
     
@@ -359,16 +366,25 @@ class LightweightEvaluationEngine(EvaluationEngine):
         if not torch.cuda.is_available():
             return 0.0
         
-        allocated = torch.cuda.memory_allocated()
-        total = torch.cuda.get_device_properties(0).total_memory
-        return allocated / total
+        try:
+            allocated = torch.cuda.memory_allocated()
+            total = torch.cuda.get_device_properties(0).total_memory
+            return allocated / total
+        except Exception:
+            return 0.0
     
     def _get_gpu_utilization(self) -> float:
         """Get GPU utilization percentage"""
-        # Placeholder - would use nvidia-ml-py or similar
-        return 75.0
+        # Use performance optimizer if available
+        if hasattr(self.performance_optimizer, 'monitor_performance'):
+            metrics = self.performance_optimizer.monitor_performance("current")
+            return metrics.get("gpu_utilization", 0.0)
+        return 0.0
     
     def _get_cpu_usage(self) -> float:
         """Get CPU usage percentage"""
-        # Placeholder - would use psutil
-        return 25.0
+        # Use performance optimizer if available
+        if hasattr(self.performance_optimizer, 'monitor_performance'):
+            metrics = self.performance_optimizer.monitor_performance("current")
+            return metrics.get("cpu_utilization", 0.0)
+        return 0.0
