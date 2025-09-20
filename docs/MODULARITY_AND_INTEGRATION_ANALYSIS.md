@@ -481,3 +481,18 @@ for file in files_to_update:
 ```
 
 This will give us **100% robust serialization** with **zero architectural complexity** - the best of both worlds for our research environment.
+
+---
+
+## ✅ **UPDATE: Dataset Consolidation Complete (September 20, 2025)**
+
+**Migration Successfully Completed**:
+- ✅ **Consolidated Folders**: `datasets/` merged into `evaluation_data/`
+- ✅ **Added 3 New Datasets**: medqa (12,723 samples), bc5cdr (10 samples), ddi (20 samples)
+- ✅ **Updated Configurations**: Registry and model-dataset mappings updated
+- ✅ **Increased Coverage**: 7 biomedical-related datasets (up from 4)
+- ✅ **Clean Architecture**: Single dataset location maintained
+- ✅ **Zero Data Loss**: All datasets preserved and accessible
+- ✅ **Full Integration**: All datasets operational in pipeline
+
+**Result**: The evaluation pipeline now has comprehensive dataset coverage with clean, modular architecture.

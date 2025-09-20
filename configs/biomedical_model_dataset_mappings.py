@@ -29,7 +29,7 @@ class ModelDatasetMapping:
 BIOMEDICAL_DATASETS = {
     "pubmedqa": DatasetConfig(
         name="PubMedQA",
-        path="datasets/biomedical/pubmedqa",
+        path="biomedical/pubmedqa",
         format="json",
         size=211300,
         domain_focus="pubmed_abstracts",
@@ -40,7 +40,7 @@ BIOMEDICAL_DATASETS = {
     
     "medqa": DatasetConfig(
         name="MedQA (USMLE)",
-        path="datasets/biomedical/medqa", 
+        path="biomedical/medqa", 
         format="json",
         size=12723,
         domain_focus="clinical_knowledge",
@@ -51,7 +51,7 @@ BIOMEDICAL_DATASETS = {
     
     "bc5cdr": DatasetConfig(
         name="BC5CDR Chemical-Disease Relations",
-        path="datasets/biomedical/bc5cdr",
+        path="biomedical/bc5cdr",
         format="bioc",
         size=1500,
         domain_focus="relation_extraction",
@@ -62,7 +62,7 @@ BIOMEDICAL_DATASETS = {
     
     "ddi": DatasetConfig(
         name="DDI Drug-Drug Interactions",
-        path="datasets/biomedical/ddi",
+        path="biomedical/ddi",
         format="xml",
         size=1025,
         domain_focus="drug_interactions",
@@ -73,7 +73,7 @@ BIOMEDICAL_DATASETS = {
     
     "bioasq": DatasetConfig(
         name="BioASQ Semantic QA",
-        path="datasets/biomedical/bioasq",
+        path="biomedical/bioasq",
         format="json",
         size=3000,  # Varies by task
         domain_focus="semantic_qa",

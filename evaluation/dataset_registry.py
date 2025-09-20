@@ -234,6 +234,36 @@ class DatasetRegistry:
                 description="Genomics named entity recognition",
                 implemented=True
             ),
+            "medqa": DatasetInfo(
+                name="medqa",
+                task_type="biomedical_qa",
+                data_path="biomedical/medqa/medqa_train.json",
+                metadata_path="meta/medqa_metadata.json",
+                sample_count=12723,
+                evaluation_type="qa_accuracy",
+                description="Medical QA from USMLE-style questions",
+                implemented=True
+            ),
+            "bc5cdr": DatasetInfo(
+                name="bc5cdr",
+                task_type="biomedical_ner",
+                data_path="biomedical/bc5cdr/bc5cdr_sample_10.json",
+                metadata_path="meta/bc5cdr_metadata.json",
+                sample_count=10,
+                evaluation_type="entity_extraction_f1",
+                description="Chemical-disease relation extraction",
+                implemented=True
+            ),
+            "ddi": DatasetInfo(
+                name="ddi",
+                task_type="relation_extraction",
+                data_path="biomedical/ddi/ddi_sample_20.json",
+                metadata_path="meta/ddi_metadata.json",
+                sample_count=20,
+                evaluation_type="relation_extraction_f1",
+                description="Drug-drug interaction extraction",
+                implemented=True
+            ),
             "protein_function": DatasetInfo(
                 name="protein_function",
                 task_type="sequence_classification",

@@ -101,12 +101,17 @@ BIOMEDICAL_SPECIALISTS = {
     'primary_datasets': [
         "bioasq",
         "pubmedqa", 
-        "mediqa"
+        "mediqa",
+        "medqa"  # Added: Medical QA from USMLE-style questions
     ],
     'optional_datasets': [
         "biomedical_sample",
         "biomedical_extended",
-        "scierc"
+        "scierc",
+        "bc5cdr",    # Added: Chemical-disease relation extraction
+        "ddi",       # Added: Drug-drug interaction extraction
+        "chemprot",  # Added: Chemical-protein interaction extraction
+        "genomics_ner"  # Added: Genomics named entity recognition
     ],
     'evaluation_metrics': [
         "biomedical_qa_accuracy",
@@ -238,7 +243,10 @@ SCIENTIFIC_RESEARCH = {
         "scierc"
     ],
     'optional_datasets': [
-        "pubmed_abstracts"
+        "pubmed_abstracts",
+        "chemprot",     # Added: Chemical-protein interaction extraction
+        "genomics_ner", # Added: Genomics named entity recognition  
+        "bioasq"        # Added: Biomedical semantic QA
     ],
     'evaluation_metrics': [
         "scientific_accuracy",

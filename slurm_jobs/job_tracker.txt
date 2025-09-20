@@ -20,3 +20,22 @@
 1646 - multimodal_processing (h100flex) - BACKEND FIXES APPLIED
 1647 - safety_alignment (h100flex) - BACKEND FIXES APPLIED
 1648 - scientific_research (h100flex) - BACKEND FIXES APPLIED
+
+# DATASET MIGRATION ENHANCED ROUND (Jobs 1670-1677)
+# Submitted: September 20, 2025 - 16:02 UTC
+# Enhanced with migrated datasets: medqa, bc5cdr, ddi + updated configurations
+
+1670 - biomedical_specialists (h100dualflex) - ENHANCED: +7 datasets (medqa, bc5cdr, ddi, chemprot, genomics_ner)
+1671 - coding_specialists (h100dualflex) - MIGRATION UPDATED
+1672 - efficiency_optimized (h100dualflex) - MIGRATION UPDATED
+1673 - general_purpose (h100flex) - MIGRATION UPDATED
+1674 - mathematical_reasoning (h100dualflex) - MIGRATION UPDATED
+1675 - multimodal_processing (h100flex) - MIGRATION UPDATED
+1676 - safety_alignment (h100flex) - MIGRATION UPDATED
+1677 - scientific_research (h100flex) - ENHANCED: +3 datasets (chemprot, genomics_ner, bioasq)
+
+## Migration Impact:
+- Biomedical coverage: 4→11 datasets (+175%)
+- Scientific coverage: 3→6 datasets (+100%)
+- Additional samples: +15,353
+- Clean architecture: single evaluation_data/ structure
