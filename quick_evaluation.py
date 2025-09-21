@@ -16,7 +16,7 @@ from datetime import datetime
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, PROJECT_ROOT)
 
-from category_evaluation import CategoryEvaluator, setup_logging, main as category_main
+from category_evaluation import CategoryEvaluationCLI
 
 # Working models (without AWQ quantization issues)
 WORKING_MODELS = [

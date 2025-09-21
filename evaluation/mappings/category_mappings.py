@@ -71,22 +71,49 @@ class CategoryMappingManager:
         
         # Scan all subdirectories for JSON files (both direct and nested)
         for category_dir in self.evaluation_data_dir.iterdir():
-            if category_dir.is_dir() and category_dir.name != "meta":
-                # Direct JSON files in category directory
-                for dataset_file in category_dir.glob("*.json"):
-                    dataset_name = dataset_file.stem
-                    self.available_datasets.add(dataset_name)
-                    logger.debug(f"Found dataset: {dataset_name} in {category_dir.name}")
+            if category_dir.is_dir() and category_dir.name not in ["meta", "download_logs"]:
                 
-                # JSON files in subdirectories (for nested dataset structure like text_geospatial)
+                # Check if this is a top-level dataset directory (like ai2d, scienceqa)
+                json_files = list(category_dir.glob("*.json"))
+                if json_files:
+                    has_standard_names = any(f.name in ["train.json", "test.json", "val.json", "validation.json"] for f in json_files)
+                    
+                    if has_standard_names:
+                        # This is a top-level dataset directory
+                        dataset_name = category_dir.name
+                        self.available_datasets.add(dataset_name)
+                        logger.debug(f"Found top-level dataset: {dataset_name}")
+                    else:
+                        # Regular JSON files in category directory
+                        for dataset_file in json_files:
+                            if not any(skip in dataset_file.name.lower() for skip in ["summary", "metadata", "config", "download"]):
+                                dataset_name = dataset_file.stem
+                                self.available_datasets.add(dataset_name)
+                                logger.debug(f"Found dataset: {dataset_name} in {category_dir.name}")
+                
+                # JSON files in subdirectories (for nested dataset structure)
                 for subdirectory in category_dir.iterdir():
                     if subdirectory.is_dir():
-                        for dataset_file in subdirectory.glob("*.json"):
-                            # Use subdirectory name as dataset name for nested structure
-                            if dataset_file.name in ["train.json", "test.json", "val.json", "metadata.json"]:
+                        json_files = list(subdirectory.glob("*.json"))
+                        if json_files:
+                            # Check if any files suggest this is a dataset directory
+                            has_standard_names = any(f.name in ["train.json", "test.json", "val.json", "validation.json"] for f in json_files)
+                            
+                            # Check if files start with the directory name (like medqa/medqa_train.json)
+                            has_prefix_pattern = any(f.stem.startswith(subdirectory.name) for f in json_files)
+                            
+                            if has_standard_names or has_prefix_pattern:
+                                # Use subdirectory name as dataset name for structured datasets
                                 dataset_name = subdirectory.name
                                 self.available_datasets.add(dataset_name)
                                 logger.debug(f"Found nested dataset: {dataset_name} in {category_dir.name}/{subdirectory.name}")
+                            else:
+                                # For non-standard files, use individual file names
+                                for dataset_file in json_files:
+                                    if not any(skip in dataset_file.name.lower() for skip in ["summary", "metadata", "config", "download"]):
+                                        dataset_name = dataset_file.stem
+                                        self.available_datasets.add(dataset_name)
+                                        logger.debug(f"Found nested dataset: {dataset_name} in {category_dir.name}/{subdirectory.name}")
         
         logger.info(f"Discovered {len(self.available_datasets)} datasets: {sorted(self.available_datasets)}")
     
