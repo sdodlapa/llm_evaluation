@@ -11,5 +11,6 @@ sbatch slurm_jobs/mathematical_reasoning_multibackend.slurm
 sbatch slurm_jobs/multimodal_processing_multibackend.slurm
 sbatch slurm_jobs/safety_alignment_multibackend.slurm
 sbatch slurm_jobs/scientific_research_multibackend.slurm
+sbatch slurm_jobs/text_geospatial_multibackend.slurm
 
-echo "All jobs submitted. Check status with: squeue -u \$USER"
+echo "All 9 category jobs submitted. Check status with: squeue -u \$USER"

@@ -252,9 +252,10 @@ class CategoryMappingManager:
             },
             "BIOMEDICAL_SPECIALISTS": {
                 "models": ["biomistral_7b", "biomistral_7b_unquantized", "biomedlm_7b", "medalpaca_7b", "biogpt", 
-                          "bio_clinicalbert", "medalpaca_13b", "clinical_camel_70b", "pubmedbert_large", "biogpt_large"],
+                          "medalpaca_13b", "clinical_camel_70b", "biogpt_large"],  # Removed BERT classification models
                 "primary_datasets": ["bioasq", "pubmedqa", "mediqa", "medqa"],
-                "category_dir": "biomedical"
+                "category_dir": "biomedical",
+                "classification_models": ["bio_clinicalbert", "pubmedbert_large"]  # Separate classification models
             },
             "MULTIMODAL_PROCESSING": {
                 "models": ["qwen2_vl_7b", "donut_base", "layoutlmv3_base", "qwen25_vl_7b", "minicpm_v_26", 
@@ -263,9 +264,10 @@ class CategoryMappingManager:
                 "category_dir": "multimodal"
             },
             "SCIENTIFIC_RESEARCH": {
-                "models": ["scibert_base", "specter2_base", "longformer_large"],
+                "models": ["longformer_large"],  # Removed BERT classification models for now - need generative alternatives
                 "primary_datasets": ["scientific_papers", "scierc"],
-                "category_dir": "scientific"
+                "category_dir": "scientific",
+                "classification_models": ["scibert_base", "specter2_base"]  # Separate classification models
             },
             "EFFICIENCY_OPTIMIZED": {
                 "models": ["qwen25_0_5b", "qwen25_3b", "phi35_mini"],
@@ -273,14 +275,15 @@ class CategoryMappingManager:
                 "category_dir": "efficiency"
             },
             "GENERAL_PURPOSE": {
-                "models": ["llama31_8b", "mistral_7b", "mistral_nemo_12b", "olmo2_13b", "yi_9b", "yi_1_5_34b", "gemma2_9b"],
+                "models": ["mistral_nemo_12b", "olmo2_13b", "yi_9b", "yi_1_5_34b", "gemma2_9b", "qwen25_3b"],  # Removed gated models llama31_8b, mistral_7b, added working qwen25_3b
                 "primary_datasets": ["arc_challenge", "hellaswag", "mt_bench", "mmlu"],
                 "category_dir": "general"
             },
             "SAFETY_ALIGNMENT": {
-                "models": ["safety_bert", "biomistral_7b", "qwen25_7b"],
-                "primary_datasets": ["toxicity_detection", "truthfulness_fixed"],
-                "category_dir": "safety"
+                "models": ["biomistral_7b", "qwen25_7b"],  # Removed BERT classification model, using generative models
+                "primary_datasets": ["truthfulqa", "ethics_benchmark"],
+                "category_dir": "safety",
+                "classification_models": ["safety_bert"]  # Separate classification models
             },
             "TEXT_GEOSPATIAL": {
                 "models": ["qwen25_7b", "qwen3_8b", "qwen3_14b", "mistral_nemo_12b"],

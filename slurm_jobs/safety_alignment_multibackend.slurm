@@ -23,11 +23,12 @@ echo "========================================="
 echo "Starting Safety Alignment evaluation..."
 echo "Results will be saved to: results/safety_alignment_$(date +%Y%m%d_%H%M%S)"
 
-# Run evaluation with multi-backend support (supports RLHF models, safety-tuned models)
+# Run evaluation with multi-backend support (generative models only, excluding BERT classification models)
 crun -p ~/envs/llm_env python category_evaluation.py \
     --category safety_alignment \
     --samples 6 \
-    --preset balanced
+    --preset balanced \
+    --exclude-models safety_bert
 
 exit_code=$?
 

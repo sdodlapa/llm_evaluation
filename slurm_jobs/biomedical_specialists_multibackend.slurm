@@ -23,12 +23,12 @@ echo "========================================="
 echo "Starting Biomedical Specialists evaluation..."
 echo "Results will be saved to: results/biomedical_specialists_$(date +%Y%m%d_%H%M%S)"
 
-# Run evaluation with multi-backend support (includes BioGPT, PubMedBERT, etc.)
+# Run evaluation with multi-backend support (generative models only, excluding BERT classification models)
 crun -p ~/envs/llm_env python category_evaluation.py \
     --category biomedical_specialists \
     --samples 8 \
     --preset balanced \
-    --exclude-models clinical_camel_70b
+    --exclude-models bio_clinicalbert pubmedbert_large clinical_camel_70b
 
 exit_code=$?
 

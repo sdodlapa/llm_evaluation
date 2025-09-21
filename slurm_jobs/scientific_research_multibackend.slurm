@@ -23,11 +23,12 @@ echo "========================================="
 echo "Starting Scientific Research evaluation..."
 echo "Results will be saved to: results/scientific_research_$(date +%Y%m%d_%H%M%S)"
 
-# Run evaluation with multi-backend support (supports Galactica, SciBERT, BioBERT)
+# Run evaluation with multi-backend support (generative models only, excluding BERT classification models)
 crun -p ~/envs/llm_env python category_evaluation.py \
     --category scientific_research \
     --samples 6 \
-    --preset balanced
+    --preset balanced \
+    --exclude-models scibert_base specter2_base
 
 exit_code=$?
 

@@ -317,6 +317,132 @@ class DatasetRegistry:
                 evaluation_type="classification_accuracy",
                 description="Toxicity and harmful content detection",
                 implemented=True
+            ),
+            
+            # Additional Missing Datasets
+            "scienceqa": DatasetInfo(
+                name="scienceqa",
+                task_type="multimodal_vqa",
+                data_path="datasets/multimodal/scienceqa.json",
+                metadata_path="meta/scienceqa_metadata.json",
+                sample_count=2000,
+                evaluation_type="vqa_accuracy",
+                description="Science question answering with diagrams and images",
+                implemented=True
+            ),
+            "natural_qa": DatasetInfo(
+                name="natural_qa",
+                task_type="question_answering",
+                data_path="datasets/general/natural_qa.json",
+                metadata_path="meta/natural_qa_metadata.json",
+                sample_count=3000,
+                evaluation_type="exact_match",
+                description="Natural language question answering with web search context",
+                implemented=True
+            ),
+            "coco_qa": DatasetInfo(
+                name="coco_qa",
+                task_type="multimodal_vqa", 
+                data_path="datasets/multimodal/coco_qa.json",
+                metadata_path="meta/coco_qa_metadata.json",
+                sample_count=5000,
+                evaluation_type="vqa_accuracy",
+                description="Visual question answering on COCO images",
+                implemented=True
+            ),
+            "hh_rlhf": DatasetInfo(
+                name="hh_rlhf",
+                task_type="safety_alignment",
+                data_path="datasets/safety/hh_rlhf.json", 
+                metadata_path="meta/hh_rlhf_metadata.json",
+                sample_count=1500,
+                evaluation_type="preference_ranking",
+                description="Human feedback dataset for RLHF safety alignment",
+                implemented=True
+            ),
+            "truthfulqa": DatasetInfo(
+                name="truthfulqa",
+                task_type="safety_alignment",
+                data_path="datasets/safety/truthfulqa.json",
+                metadata_path="meta/truthfulqa_metadata.json", 
+                sample_count=817,
+                evaluation_type="truthfulness_rating",
+                description="Truthfulness evaluation for language models",
+                implemented=True
+            ),
+            
+            # Geospatial Datasets
+            "spatial_reasoning": DatasetInfo(
+                name="spatial_reasoning",
+                task_type="geospatial_reasoning",
+                data_path="datasets/geospatial/spatial_reasoning.json",
+                metadata_path="meta/spatial_reasoning_metadata.json",
+                sample_count=1000,
+                evaluation_type="spatial_accuracy",
+                description="Spatial relationship reasoning and comprehension",
+                implemented=True
+            ),
+            "coordinate_processing": DatasetInfo(
+                name="coordinate_processing",
+                task_type="geospatial_data",
+                data_path="datasets/geospatial/coordinate_processing.json",
+                metadata_path="meta/coordinate_processing_metadata.json",
+                sample_count=500,
+                evaluation_type="coordinate_accuracy",
+                description="Geographic coordinate processing and conversion",
+                implemented=True
+            ),
+            "address_parsing": DatasetInfo(
+                name="address_parsing",
+                task_type="geospatial_nlp",
+                data_path="datasets/geospatial/address_parsing.json",
+                metadata_path="meta/address_parsing_metadata.json",
+                sample_count=750,
+                evaluation_type="address_accuracy",
+                description="Address parsing and standardization",
+                implemented=True
+            ),
+            "location_ner": DatasetInfo(
+                name="location_ner",
+                task_type="geospatial_ner",
+                data_path="datasets/geospatial/location_ner.json",
+                metadata_path="meta/location_ner_metadata.json",
+                sample_count=1200,
+                evaluation_type="entity_extraction_f1",
+                description="Geographic location named entity recognition",
+                implemented=True
+            ),
+            "ner_locations": DatasetInfo(
+                name="ner_locations",
+                task_type="geospatial_ner",
+                data_path="datasets/geospatial/ner_locations.json",
+                metadata_path="meta/ner_locations_metadata.json",
+                sample_count=1500,
+                evaluation_type="entity_extraction_f1",
+                description="Named entity recognition for geographic locations",
+                implemented=True
+            ),
+            
+            # Additional Missing Datasets
+            "mediqa": DatasetInfo(
+                name="mediqa",
+                task_type="biomedical_qa",
+                data_path="datasets/biomedical/mediqa.json",
+                metadata_path="meta/mediqa_metadata.json",
+                sample_count=1000,
+                evaluation_type="qa_accuracy",
+                description="Medical question answering dataset",
+                implemented=True
+            ),
+            "enhanced_math_fixed": DatasetInfo(
+                name="enhanced_math_fixed",
+                task_type="mathematical_reasoning",
+                data_path="datasets/reasoning/enhanced_math_fixed.json",
+                metadata_path="meta/enhanced_math_fixed_metadata.json",
+                sample_count=2000,
+                evaluation_type="numerical_accuracy",
+                description="Enhanced mathematical reasoning problems (fixed version)",
+                implemented=True
             )
         }
     
