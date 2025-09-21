@@ -20,7 +20,7 @@ def create_generic_model(model_name: str, preset: str = "balanced", cache_dir: O
     """Generic model creation function that works with any model using multi-backend approach"""
     try:
         # Import here to avoid circular imports
-        from configs.model_configs import MODEL_CONFIGS
+        from configs.model_registry import MODEL_CONFIGS
         from evaluation.multi_backend_loader import create_multi_backend_loader
         
         if model_name not in MODEL_CONFIGS:

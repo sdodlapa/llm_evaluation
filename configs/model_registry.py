@@ -823,7 +823,7 @@ MODEL_CONFIGS = {
 
     "mistral_nemo_12b": ModelConfig(
         model_name="Mistral Nemo 12B",
-        huggingface_id="mistralai/Mistral-Nemo-Instruct-2407",
+        huggingface_id="migtissera/Tess-3-Mistral-Nemo-12B",
         license="Apache 2.0",
         size_gb=12.0,
         context_window=128000,
@@ -831,7 +831,7 @@ MODEL_CONFIGS = {
         specialization_category="general",
         specialization_subcategory="general_purpose",
         primary_use_cases=["general_chat", "reasoning", "knowledge_tasks"],
-        quantization_method="none",  # AWQ not available for this model in vLLM 0.10.2
+        quantization_method="none",  # Using compatible fine-tuned version
         max_model_len=32768,
         gpu_memory_utilization=0.85,
         priority="MEDIUM",

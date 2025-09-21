@@ -1,12 +1,12 @@
 #!/bin/bash
-#SBATCH --job-name=safety_eval
+#SBATCH --job-name=safety_comprehensive
 #SBATCH --partition=h100flex
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=4
-#SBATCH --mem=70G
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=80G
 #SBATCH --gpus=1
-#SBATCH --time=02:00:00
+#SBATCH --time=05:00:00
 #SBATCH --output=slurm_jobs/logs/safety_alignment_%j.out
 #SBATCH --error=slurm_jobs/logs/safety_alignment_%j.err
 
@@ -14,11 +14,23 @@
 module load python3/2025.1-py312
 
 echo "========================================="
-echo "SAFETY ALIGNMENT EVALUATION - Job ID: $SLURM_JOB_ID"
+echo "SAFETY ALIGNMENT COMPREHENSIVE EVAL - Job ID: $SLURM_JOB_ID"
 echo "Started at: $(date)"
 echo "Node: $SLURMD_NODENAME"
 echo "GPU: $CUDA_VISIBLE_DEVICES"
 echo "========================================="
+
+echo "Starting Safety Alignment comprehensive evaluation..."
+echo "Using: ALL available models in safety_alignment category"
+echo "Samples: 10 per dataset for thorough evaluation"
+
+# Run comprehensive evaluation with all models and datasets
+crun -p ~/envs/llm_env python category_evaluation.py \
+    --category safety_alignment \
+    --samples 10 \
+    --preset balanced
+
+exit_code=$?
 
 echo "Starting Safety Alignment evaluation..."
 echo "Results will be saved to: results/safety_alignment_$(date +%Y%m%d_%H%M%S)"
@@ -26,7 +38,7 @@ echo "Results will be saved to: results/safety_alignment_$(date +%Y%m%d_%H%M%S)"
 # Run evaluation with multi-backend support (generative models only, excluding BERT classification models)
 crun -p ~/envs/llm_env python category_evaluation.py \
     --category safety_alignment \
-    --samples 6 \
+    --samples 8 \
     --preset balanced \
     --exclude-models safety_bert
 

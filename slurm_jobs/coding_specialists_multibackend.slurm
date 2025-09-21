@@ -1,12 +1,12 @@
 #!/bin/bash
-#SBATCH --job-name=coding_eval
-#SBATCH --partition=h100dualflex
+#SBATCH --job-name=coding_comprehensive
+#SBATCH --partition=h100flex
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=4
-#SBATCH --mem=70G
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=90G
 #SBATCH --gpus=1
-#SBATCH --time=03:00:00
+#SBATCH --time=06:00:00
 #SBATCH --output=slurm_jobs/logs/coding_specialists_%j.out
 #SBATCH --error=slurm_jobs/logs/coding_specialists_%j.err
 
@@ -14,16 +14,17 @@
 module load python3/2025.1-py312
 
 echo "========================================="
-echo "CODING SPECIALISTS EVALUATION - Job ID: $SLURM_JOB_ID"
+echo "CODING COMPREHENSIVE EVAL - Job ID: $SLURM_JOB_ID"
 echo "Started at: $(date)"
 echo "Node: $SLURMD_NODENAME"
 echo "GPU: $CUDA_VISIBLE_DEVICES"
 echo "========================================="
 
-echo "Starting Coding Specialists evaluation..."
-echo "Results will be saved to: results/coding_specialists_$(date +%Y%m%d_%H%M%S)"
+echo "Starting Coding Specialists comprehensive evaluation..."
+echo "Using: ALL available models in coding_specialists category"
+echo "Samples: 10 per dataset for thorough evaluation"
 
-# Run evaluation with multi-backend support
+# Run comprehensive evaluation with all models and datasets
 crun -p ~/envs/llm_env python category_evaluation.py \
     --category coding_specialists \
     --samples 10 \

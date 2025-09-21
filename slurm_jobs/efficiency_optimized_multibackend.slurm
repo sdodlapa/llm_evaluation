@@ -1,12 +1,12 @@
 #!/bin/bash
-#SBATCH --job-name=efficiency_eval
-#SBATCH --partition=h100dualflex
+#SBATCH --job-name=efficiency_comprehensive
+#SBATCH --partition=h100flex
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=4
+#SBATCH --cpus-per-task=8
 #SBATCH --mem=70G
 #SBATCH --gpus=1
-#SBATCH --time=02:30:00
+#SBATCH --time=04:00:00
 #SBATCH --output=slurm_jobs/logs/efficiency_optimized_%j.out
 #SBATCH --error=slurm_jobs/logs/efficiency_optimized_%j.err
 
@@ -14,19 +14,20 @@
 module load python3/2025.1-py312
 
 echo "========================================="
-echo "EFFICIENCY OPTIMIZED EVALUATION - Job ID: $SLURM_JOB_ID"
+echo "EFFICIENCY COMPREHENSIVE EVAL - Job ID: $SLURM_JOB_ID"
 echo "Started at: $(date)"
 echo "Node: $SLURMD_NODENAME"
 echo "GPU: $CUDA_VISIBLE_DEVICES"
 echo "========================================="
 
-echo "Starting Efficiency Optimized evaluation..."
-echo "Results will be saved to: results/efficiency_optimized_$(date +%Y%m%d_%H%M%S)"
+echo "Starting Efficiency Optimized comprehensive evaluation..."
+echo "Using: ALL available models in efficiency_optimized category"
+echo "Samples: 10 per dataset for thorough evaluation"
 
-# Run evaluation with multi-backend support (supports MobileVLM, MobileLLaMA, etc.)
+# Run comprehensive evaluation with all models and datasets
 crun -p ~/envs/llm_env python category_evaluation.py \
     --category efficiency_optimized \
-    --samples 6 \
+    --samples 10 \
     --preset balanced
 
 exit_code=$?

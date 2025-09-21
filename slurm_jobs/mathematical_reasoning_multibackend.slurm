@@ -1,12 +1,12 @@
 #!/bin/bash
-#SBATCH --job-name=mathematical_eval
-#SBATCH --partition=h100dualflex
+#SBATCH --job-name=math_comprehensive
+#SBATCH --partition=h100flex
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=4
-#SBATCH --mem=70G
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=80G
 #SBATCH --gpus=1
-#SBATCH --time=03:00:00
+#SBATCH --time=05:00:00
 #SBATCH --output=slurm_jobs/logs/mathematical_reasoning_%j.out
 #SBATCH --error=slurm_jobs/logs/mathematical_reasoning_%j.err
 
@@ -14,21 +14,21 @@
 module load python3/2025.1-py312
 
 echo "========================================="
-echo "MATHEMATICAL REASONING EVALUATION - Job ID: $SLURM_JOB_ID"
+echo "MATHEMATICAL COMPREHENSIVE EVAL - Job ID: $SLURM_JOB_ID"
 echo "Started at: $(date)"
 echo "Node: $SLURMD_NODENAME"
 echo "GPU: $CUDA_VISIBLE_DEVICES"
 echo "========================================="
 
-echo "Starting Mathematical Reasoning evaluation..."
-echo "Results will be saved to: results/mathematical_reasoning_$(date +%Y%m%d_%H%M%S)"
+echo "Starting Mathematical Reasoning comprehensive evaluation..."
+echo "Using: ALL available models in mathematical_reasoning category"
+echo "Samples: 10 per dataset for thorough evaluation"
 
-# Run evaluation with multi-backend support (supports MetaMath, WizardMath, DeepSeek-Math)
+# Run comprehensive evaluation with all models and datasets
 crun -p ~/envs/llm_env python category_evaluation.py \
     --category mathematical_reasoning \
-    --samples 6 \
-    --preset balanced \
-    --exclude-models wizardmath_70b metamath_70b
+    --samples 10 \
+    --preset balanced
 
 exit_code=$?
 

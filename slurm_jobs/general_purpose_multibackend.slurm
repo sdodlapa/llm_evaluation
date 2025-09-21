@@ -1,12 +1,12 @@
 #!/bin/bash
-#SBATCH --job-name=general_eval
+#SBATCH --job-name=general_comprehensive
 #SBATCH --partition=h100flex
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=4
-#SBATCH --mem=70G
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=80G
 #SBATCH --gpus=1
-#SBATCH --time=04:00:00
+#SBATCH --time=06:00:00
 #SBATCH --output=slurm_jobs/logs/general_purpose_%j.out
 #SBATCH --error=slurm_jobs/logs/general_purpose_%j.err
 
@@ -14,21 +14,21 @@
 module load python3/2025.1-py312
 
 echo "========================================="
-echo "GENERAL PURPOSE EVALUATION - Job ID: $SLURM_JOB_ID"
+echo "GENERAL PURPOSE COMPREHENSIVE EVAL - Job ID: $SLURM_JOB_ID"
 echo "Started at: $(date)"
 echo "Node: $SLURMD_NODENAME"
 echo "GPU: $CUDA_VISIBLE_DEVICES"
 echo "========================================="
 
-echo "Starting General Purpose evaluation..."
-echo "Results will be saved to: results/general_purpose_$(date +%Y%m%d_%H%M%S)"
+echo "Starting General Purpose comprehensive evaluation..."
+echo "Using: ALL available models in general_purpose category"
+echo "Samples: 10 per dataset for thorough evaluation"
 
-# Run evaluation with multi-backend support (open models only, excluding gated Llama/Mistral)
+# Run comprehensive evaluation with all models and datasets
 crun -p ~/envs/llm_env python category_evaluation.py \
     --category general_purpose \
-    --samples 8 \
-    --preset balanced \
-    --exclude-models llama31_8b mistral_7b
+    --samples 10 \
+    --preset balanced
 
 exit_code=$?
 

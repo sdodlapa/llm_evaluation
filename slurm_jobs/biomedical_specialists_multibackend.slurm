@@ -1,12 +1,12 @@
 #!/bin/bash
-#SBATCH --job-name=biomedical_eval
-#SBATCH --partition=h100dualflex
+#SBATCH --job-name=biomedical_comprehensive
+#SBATCH --partition=h100flex
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=4
-#SBATCH --mem=70G
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=80G
 #SBATCH --gpus=1
-#SBATCH --time=02:30:00
+#SBATCH --time=05:00:00
 #SBATCH --output=slurm_jobs/logs/biomedical_specialists_%j.out
 #SBATCH --error=slurm_jobs/logs/biomedical_specialists_%j.err
 
@@ -14,11 +14,23 @@
 module load python3/2025.1-py312
 
 echo "========================================="
-echo "BIOMEDICAL SPECIALISTS EVALUATION - Job ID: $SLURM_JOB_ID"
+echo "BIOMEDICAL COMPREHENSIVE EVAL - Job ID: $SLURM_JOB_ID"
 echo "Started at: $(date)"
 echo "Node: $SLURMD_NODENAME"
 echo "GPU: $CUDA_VISIBLE_DEVICES"
 echo "========================================="
+
+echo "Starting Biomedical Specialists comprehensive evaluation..."
+echo "Using: ALL available models in biomedical_specialists category"
+echo "Samples: 10 per dataset for thorough evaluation"
+
+# Run comprehensive evaluation with all models and datasets
+crun -p ~/envs/llm_env python category_evaluation.py \
+    --category biomedical_specialists \
+    --samples 10 \
+    --preset balanced
+
+exit_code=$?
 
 echo "Starting Biomedical Specialists evaluation..."
 echo "Results will be saved to: results/biomedical_specialists_$(date +%Y%m%d_%H%M%S)"
