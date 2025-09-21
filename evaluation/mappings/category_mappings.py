@@ -69,13 +69,24 @@ class CategoryMappingManager:
             logger.warning(f"Evaluation data directory {self.evaluation_data_dir} does not exist")
             return
         
-        # Scan all subdirectories for JSON files
+        # Scan all subdirectories for JSON files (both direct and nested)
         for category_dir in self.evaluation_data_dir.iterdir():
             if category_dir.is_dir() and category_dir.name != "meta":
+                # Direct JSON files in category directory
                 for dataset_file in category_dir.glob("*.json"):
                     dataset_name = dataset_file.stem
                     self.available_datasets.add(dataset_name)
                     logger.debug(f"Found dataset: {dataset_name} in {category_dir.name}")
+                
+                # JSON files in subdirectories (for nested dataset structure like text_geospatial)
+                for subdirectory in category_dir.iterdir():
+                    if subdirectory.is_dir():
+                        for dataset_file in subdirectory.glob("*.json"):
+                            # Use subdirectory name as dataset name for nested structure
+                            if dataset_file.name in ["train.json", "test.json", "val.json", "metadata.json"]:
+                                dataset_name = subdirectory.name
+                                self.available_datasets.add(dataset_name)
+                                logger.debug(f"Found nested dataset: {dataset_name} in {category_dir.name}/{subdirectory.name}")
         
         logger.info(f"Discovered {len(self.available_datasets)} datasets: {sorted(self.available_datasets)}")
     

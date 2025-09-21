@@ -404,6 +404,53 @@ SAFETY_ALIGNMENT = {
 
 
 # ================================
+# TEXT-BASED GEOSPATIAL PROCESSING
+# ================================
+
+TEXT_GEOSPATIAL = {
+    'models': [
+        'qwen25_7b',      # Strong geographic knowledge
+        'qwen3_8b',       # Good general understanding
+        'qwen3_14b',      # Complex spatial reasoning
+        'mistral_nemo_12b' # Long context for complex queries
+    ],
+    'primary_datasets': [
+        "spatial_reasoning",    # Custom spatial reasoning questions
+        "coordinate_processing", # Coordinate math and conversions  
+        "address_parsing",      # Address standardization
+        "location_ner",         # Location entity recognition
+        "ner_locations"         # Large-scale location NER
+    ],
+    'optional_datasets': [
+        "geographic_features",  # Geographic knowledge
+        "geographic_demand"     # Geographic analysis tasks
+    ],
+    'evaluation_metrics': [
+        "spatial_reasoning_accuracy",
+        "geographic_f1", 
+        "coordinate_accuracy",
+        "address_match_score",
+        "qa_accuracy",
+        "exact_match"
+    ],
+    'category_config': {
+        "default_sample_limit": 20,
+        "timeout_per_sample": 30,
+        "max_tokens": 512,
+        "temperature": 0.1,  # Low temperature for factual geographic information
+        "top_p": 0.9,
+        "stop_sequences": ["Question:", "Answer:", "\n\n"],
+        "enable_coordinate_validation": True,
+        "require_geographic_context": True,
+        "save_spatial_reasoning": True,
+        "enable_map_context": False  # Future feature
+    },
+    'priority': "HIGH",
+    'phase': "4"  # Phase 4 addition
+}
+
+
+# ================================
 # CATEGORY REGISTRY
 # ================================
 
@@ -416,7 +463,8 @@ CATEGORY_REGISTRY = {
     "scientific_research": SCIENTIFIC_RESEARCH,
     "efficiency_optimized": EFFICIENCY_OPTIMIZED,
     "general_purpose": GENERAL_PURPOSE,
-    "safety_alignment": SAFETY_ALIGNMENT
+    "safety_alignment": SAFETY_ALIGNMENT,
+    "text_geospatial": TEXT_GEOSPATIAL
 }
 
 # Alias for compatibility with different import patterns
