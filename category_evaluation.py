@@ -46,10 +46,19 @@ from evaluation.json_serializer import safe_json_dump, MLObjectEncoder
 
 def lazy_import_category_system():
     """Lazy import for category system - only when needed"""
-    from evaluation.mappings import CategoryMappingManager, CATEGORY_REGISTRY
-    from evaluation.mappings.model_categories import get_category_for_model
-    from configs.model_configs import MODEL_CONFIGS
-    return CategoryMappingManager, CATEGORY_REGISTRY, get_category_for_model, MODEL_CONFIGS
+    # Try improved discovery system first
+    try:
+        from evaluation.improved_discovery import CategoryMappingManager
+        from evaluation.mappings import CATEGORY_REGISTRY
+        from evaluation.mappings.model_categories import get_category_for_model
+        from configs.model_configs import MODEL_CONFIGS
+        return CategoryMappingManager, CATEGORY_REGISTRY, get_category_for_model, MODEL_CONFIGS, "improved"
+    except ImportError:
+        # Fallback to legacy system
+        from evaluation.mappings import CategoryMappingManager, CATEGORY_REGISTRY
+        from evaluation.mappings.model_categories import get_category_for_model
+        from configs.model_configs import MODEL_CONFIGS
+        return CategoryMappingManager, CATEGORY_REGISTRY, get_category_for_model, MODEL_CONFIGS, "legacy"
 
 def lazy_import_pipeline_components():
     """Lazy import for heavy pipeline components - only when evaluation starts"""
@@ -93,7 +102,8 @@ class CategoryEvaluationCLI:
     def _ensure_components_loaded(self):
         """Load heavy components only when needed for evaluation"""
         if self.manager is None:
-            CategoryMappingManager, CATEGORY_REGISTRY, get_category_for_model, MODEL_CONFIGS = lazy_import_category_system()
+            CategoryMappingManager, CATEGORY_REGISTRY, get_category_for_model, MODEL_CONFIGS, system_type = lazy_import_category_system()
+            print(f"Using {system_type} discovery system...")
             self.manager = CategoryMappingManager()
             # Store these as instance variables for later use
             self._category_registry = CATEGORY_REGISTRY
@@ -220,17 +230,27 @@ class CategoryEvaluationCLI:
         print("="*60)
         
         for name, category in self._category_registry.items():
-            status = self.manager.validate_category_readiness(name)
+            # Use get_category_status for legacy-compatible format
+            if hasattr(self.manager, 'get_category_status'):
+                status = self.manager.get_category_status(name)
+            else:
+                status = self.manager.validate_category_readiness(name)
+            
             ready_status = "✅ READY" if status['ready'] else "❌ NOT READY"
             
             print(f"\n{name.upper()}: {ready_status}")
             print(f"  Models ({len(category['models'])}): {', '.join(category['models'])}")
             print(f"  Primary Datasets ({len(category['primary_datasets'])}): {', '.join(category['primary_datasets'])}")
             
-            if status['ready']:
-                available_primary = status['primary_datasets']['available']
-                total_primary = status['primary_datasets']['total']
-                print(f"  Available Datasets: {available_primary}/{total_primary}")
+            if status['ready'] and 'primary_datasets' in status:
+                available_count = len(status['primary_datasets']['available'])
+                total_count = len(status['primary_datasets']['required'])
+                print(f"  Available Datasets: {available_count}/{total_count}")
+            elif 'available_datasets' in status:
+                # Handle different status format
+                available_count = len(status['available_datasets'])
+                required_count = len(status['required_datasets'])
+                print(f"  Available Datasets: {available_count}/{required_count}")
     
     def list_models(self):
         """List all available models with category information"""
