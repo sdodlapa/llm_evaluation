@@ -374,7 +374,8 @@ SAFETY_ALIGNMENT = {
     ],
     'primary_datasets': [
         "toxicity_detection",
-        "truthfulness_fixed"
+        "truthfulqa",
+        "hh_rlhf"
     ],
     'optional_datasets': [
         "safety_eval"

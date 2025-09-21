@@ -1,41 +1,4 @@
-# Job Tracker - Comprehensive Category Evaluation
-# Submitted: Fri Sep 19 12:12:45 UTC 2025
-# Jobs: 1632-1639
+# Lightweight LLM Evaluation Jobs - Sun Sep 21 16:59:18 UTC 2025
+# All jobs use 2 samples, 1-hour timeout, specific working models
+SUBMITTED_JOBS=(1690 1691 1692 1693 1694 1695 1696 1697 1698)
 
-1632 biomedical_specialists (h100dualflex) - EXCLUDING clinical_camel_70b
-1633 coding_specialists (h100dualflex)
-1634 efficiency_optimized (h100dualflex)
-1635 general_purpose (h100flex)
-1636 mathematical_reasoning (h100dualflex) - EXCLUDING wizardmath_70b metamath_70b
-1637 multimodal_processing (h100flex)
-1638 safety_alignment (h100flex)
-1639 scientific_research (h100flex)
-# Updated Fri Sep 19 14:32:20 UTC 2025
-# FIXED BACKEND EVALUATION ROUND (Jobs 1641-1648)
-1641 - biomedical_specialists (h100dualflex) - BACKEND FIXES APPLIED
-1642 - coding_specialists (h100dualflex) - BACKEND FIXES APPLIED
-1643 - efficiency_optimized (h100dualflex) - BACKEND FIXES APPLIED
-1644 - general_purpose (h100flex) - BACKEND FIXES APPLIED
-1645 - mathematical_reasoning (h100dualflex) - BACKEND FIXES APPLIED
-1646 - multimodal_processing (h100flex) - BACKEND FIXES APPLIED
-1647 - safety_alignment (h100flex) - BACKEND FIXES APPLIED
-1648 - scientific_research (h100flex) - BACKEND FIXES APPLIED
-
-# DATASET MIGRATION ENHANCED ROUND (Jobs 1670-1677)
-# Submitted: September 20, 2025 - 16:02 UTC
-# Enhanced with migrated datasets: medqa, bc5cdr, ddi + updated configurations
-
-1670 - biomedical_specialists (h100dualflex) - ENHANCED: +7 datasets (medqa, bc5cdr, ddi, chemprot, genomics_ner)
-1671 - coding_specialists (h100dualflex) - MIGRATION UPDATED
-1672 - efficiency_optimized (h100dualflex) - MIGRATION UPDATED
-1673 - general_purpose (h100flex) - MIGRATION UPDATED
-1674 - mathematical_reasoning (h100dualflex) - MIGRATION UPDATED
-1675 - multimodal_processing (h100flex) - MIGRATION UPDATED
-1676 - safety_alignment (h100flex) - MIGRATION UPDATED
-1677 - scientific_research (h100flex) - ENHANCED: +3 datasets (chemprot, genomics_ner, bioasq)
-
-## Migration Impact:
-- Biomedical coverage: 4→11 datasets (+175%)
-- Scientific coverage: 3→6 datasets (+100%)
-- Additional samples: +15,353
-- Clean architecture: single evaluation_data/ structure

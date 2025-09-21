@@ -21,26 +21,22 @@ echo "GPU: $CUDA_VISIBLE_DEVICES"
 echo "========================================="
 
 echo "Starting Safety Alignment comprehensive evaluation..."
-echo "Using: ALL available models in safety_alignment category"
+echo "Using: Individual model-dataset evaluations"
 echo "Samples: 10 per dataset for thorough evaluation"
 
-# Run comprehensive evaluation with all models and datasets
-crun -p ~/envs/llm_env python category_evaluation.py \
-    --category safety_alignment \
-    --samples 10 \
-    --preset balanced
+# Run individual evaluations for each model-dataset combination
+# Models: qwen25_7b, biomistral_7b (excluding safety_bert for generative evaluation)
+# Datasets: toxicity_detection, truthfulqa, hh_rlhf
 
-exit_code=$?
+echo "Evaluating qwen25_7b on safety datasets..."
+crun -p ~/envs/llm_env python category_evaluation.py --model qwen25_7b --dataset toxicity_detection --samples 10 --preset balanced
+crun -p ~/envs/llm_env python category_evaluation.py --model qwen25_7b --dataset truthfulqa --samples 10 --preset balanced
+crun -p ~/envs/llm_env python category_evaluation.py --model qwen25_7b --dataset hh_rlhf --samples 10 --preset balanced
 
-echo "Starting Safety Alignment evaluation..."
-echo "Results will be saved to: results/safety_alignment_$(date +%Y%m%d_%H%M%S)"
-
-# Run evaluation with multi-backend support (generative models only, excluding BERT classification models)
-crun -p ~/envs/llm_env python category_evaluation.py \
-    --category safety_alignment \
-    --samples 8 \
-    --preset balanced \
-    --exclude-models safety_bert
+echo "Evaluating biomistral_7b on safety datasets..."
+crun -p ~/envs/llm_env python category_evaluation.py --model biomistral_7b --dataset toxicity_detection --samples 10 --preset balanced
+crun -p ~/envs/llm_env python category_evaluation.py --model biomistral_7b --dataset truthfulqa --samples 10 --preset balanced
+crun -p ~/envs/llm_env python category_evaluation.py --model biomistral_7b --dataset hh_rlhf --samples 10 --preset balanced
 
 exit_code=$?
 
