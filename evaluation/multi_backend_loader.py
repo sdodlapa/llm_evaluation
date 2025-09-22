@@ -133,7 +133,16 @@ def detect_model_backend(model_id: str, model_config: Any) -> ModelBackendConfig
     try:
         # For gated models, this might fail
         from transformers import AutoConfig
-        hf_config = AutoConfig.from_pretrained(huggingface_id, trust_remote_code=True)
+        import os
+        
+        # Get authentication token for gated models
+        auth_token = os.environ.get('HUGGINGFACE_HUB_TOKEN') or os.environ.get('HF_TOKEN')
+        
+        hf_config = AutoConfig.from_pretrained(
+            huggingface_id, 
+            trust_remote_code=True,
+            token=auth_token
+        )
         architectures = getattr(hf_config, 'architectures', [])
         
         if architectures:
@@ -211,6 +220,10 @@ class MultiBackendModelLoader:
             
             huggingface_id = getattr(model_config, 'huggingface_id', model_id)
             
+            # Get authentication token for gated models
+            import os
+            auth_token = os.environ.get('HUGGINGFACE_HUB_TOKEN') or os.environ.get('HF_TOKEN')
+            
             # Basic vLLM configuration
             vllm_args = {
                 "model": huggingface_id,
@@ -222,6 +235,12 @@ class MultiBackendModelLoader:
                 "enable_prefix_caching": True,
                 "block_size": 16
             }
+            
+            # Add token for gated models
+            if auth_token:
+                vllm_args["download_dir"] = None  # Use default
+                # Set environment for vLLM to use the token
+                os.environ['HF_TOKEN'] = auth_token
             
             logger.info(f"Loading {model_id} using vLLM backend")
             llm = LLM(**vllm_args)
@@ -239,6 +258,11 @@ class MultiBackendModelLoader:
                         max_tokens=kwargs.get('max_tokens', 1024)
                     )
                     return self.llm.generate(prompts, sampling_params)
+                
+                def generate_response(self, prompt: str, **kwargs) -> str:
+                    """Generate a single response for a single prompt (compatibility method)"""
+                    outputs = self.generate([prompt], **kwargs)
+                    return outputs[0].outputs[0].text if outputs and outputs[0].outputs else ""
             
             wrapper = VLLMModelWrapper(llm, model_id)
             self.loaded_models[model_id] = wrapper
@@ -256,11 +280,16 @@ class MultiBackendModelLoader:
             
             huggingface_id = getattr(model_config, 'huggingface_id', model_id)
             
+            # Get authentication token for gated models
+            import os
+            auth_token = os.environ.get('HUGGINGFACE_HUB_TOKEN') or os.environ.get('HF_TOKEN')
+            
             # Load tokenizer
             tokenizer = AutoTokenizer.from_pretrained(
                 huggingface_id,
                 trust_remote_code=True,
-                padding_side="left"
+                padding_side="left",
+                token=auth_token
             )
             
             # Add pad token if missing
@@ -272,6 +301,7 @@ class MultiBackendModelLoader:
                 "trust_remote_code": True,
                 "device_map": "auto",
                 "torch_dtype": torch.bfloat16,
+                "token": auth_token
             }
             
             if backend_config.model_class == "AutoModel":
@@ -357,6 +387,11 @@ class TransformersModelWrapper:
         except Exception as e:
             logger.error(f"Generation failed for {self.model_id}: {e}")
             return [""] * len(prompts)
+    
+    def generate_response(self, prompt: str, **kwargs) -> str:
+        """Generate a single response for a single prompt (compatibility method)"""
+        responses = self.generate([prompt], **kwargs)
+        return responses[0] if responses else ""
     
     def cleanup(self):
         """Clean up model resources"""

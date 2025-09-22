@@ -294,7 +294,7 @@ class CategoryMappingManager:
             "REASONING_SPECIALIZED": {
                 "models": ["deepseek_r1_distill_llama_70b"],
                 "primary_datasets": ["gsm8k", "enhanced_math_fixed", "arc_challenge", "mmlu"],
-                "category_dir": "reasoning"  # Math datasets are in reasoning, general datasets will be found via cross-search
+                "category_dir": "math"  # Math datasets are in math directory, general datasets will be found via cross-search
             },
             "TEXT_GEOSPATIAL": {
                 "models": ["qwen25_7b", "qwen3_8b", "qwen3_14b", "mistral_nemo_12b"],

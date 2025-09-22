@@ -17,6 +17,15 @@
 # Load environment
 module load python3/2025.1-py312
 
+# Setup HuggingFace authentication for gated models  
+export HF_TOKEN="$(cat ~/.huggingface/token 2>/dev/null || echo '')"
+if [ -n "$HF_TOKEN" ]; then
+    export HUGGINGFACE_HUB_TOKEN="$HF_TOKEN"
+    echo "HuggingFace token loaded for gated model access"
+else
+    echo "Warning: No HuggingFace token found - gated models may fail"
+fi
+
 echo "========================================="
 echo "NEW MODELS COMPREHENSIVE EVAL - Job ID: $SLURM_JOB_ID"
 echo "Started at: $(date)"
