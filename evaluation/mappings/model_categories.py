@@ -418,47 +418,217 @@ SAFETY_ALIGNMENT = {
 
 
 # ================================
-# MIXTURE OF EXPERTS CATEGORY
+# H100-OPTIMIZED LARGE MODELS CATEGORY
+# ================================
+
+H100_OPTIMIZED_LARGE = {
+    'models': [
+        'qwen25_72b',            # Qwen2.5 72B Instruct (131K context)
+        'llama31_70b_fp8',       # NVIDIA FP8 optimized Llama 3.1 70B
+        'mixtral_8x22b',         # Mixtral 8x22B Instruct (efficient MoE)
+        'dbrx_instruct',         # DBRX 132B Instruct (enterprise MoE)
+        'deepseek_v3',           # DeepSeek-V3 (671B/37B active ultra-efficient)
+        'xverse_65b'             # XVERSE-65B (Apache 2.0 alternative)
+    ],
+    'primary_datasets': [
+        "mmlu_pro",              # Enhanced academic evaluation
+        "bigbench_hard",         # Complex multi-step reasoning
+        "longbench",             # Long-context understanding
+        "mmlu",                  # Standard academic benchmark
+        "hellaswag"              # Common sense reasoning
+    ],
+    'optional_datasets': [
+        "mt_bench",              # Chat evaluation
+        "truthfulness_fixed",    # Truthfulness assessment
+        "enterprise_tasks",      # Business applications
+        "advanced_reasoning",    # Complex problem solving
+        "gsm8k",                 # Mathematical reasoning
+        "humaneval"              # Basic coding ability
+    ],
+    'evaluation_metrics': [
+        "complex_reasoning_accuracy",
+        "long_context_coherence", 
+        "multilingual_capability",
+        "inference_efficiency",
+        "h100_utilization_score",
+        "memory_efficiency_ratio"
+    ],
+    'category_config': {
+        "default_sample_limit": 10,  # Very small batches for huge models
+        "timeout_per_sample": 180,  # Longer timeout for complex reasoning
+        "max_tokens": 4096,
+        "temperature": 0.1,         # Low temperature for consistency
+        "top_p": 0.9,
+        "stop_sequences": ["<|end_of_text|>", "\n\nHuman:", "\n\nUser:"],
+        "enable_tensor_parallelism": True,
+        "enable_h100_optimizations": True,
+        "enable_performance_monitoring": True,
+        "save_reasoning_traces": True,
+        "require_detailed_analysis": True,
+        "fp8_optimization": True,    # H100-specific
+        "use_paged_kv_cache": True   # Memory optimization
+    },
+    'priority': "HIGHEST",
+    'phase': "1"  # Priority implementation
+}
+
+# ================================
+# ADVANCED CODE GENERATION CATEGORY (Updated)
+# ================================
+
+ADVANCED_CODE_GENERATION = {
+    'models': [
+        'granite_34b_code',          # IBM Granite 34B Code (Apache 2.0)
+        'qwen3_coder_30b',          # Existing Qwen3 Coder 32B
+        'codestral_22b',            # Existing Codestral 22B
+        'deepseek_coder_16b',       # Existing DeepSeek Coder 16B
+        'starcoder2_15b'            # Existing StarCoder2 15B
+    ],
+    'primary_datasets': [
+        "swe_bench",                # Software engineering benchmark
+        "livecodebench",            # Recent competitive programming
+        "humaneval",                # Standard code evaluation
+        "mbpp",                     # Python programming problems
+        "bigcodebench"              # Complex coding tasks
+    ],
+    'optional_datasets': [
+        "codecontests",
+        "apps",
+        "repo_bench",               # Repository-level tasks
+        "code_contests"             # Competitive programming
+    ],
+    'evaluation_metrics': [
+        "repository_level_accuracy",
+        "competitive_programming_score",
+        "code_execution_success_rate",
+        "software_engineering_quality",
+        "multifile_code_generation",
+        "pass_at_k",
+        "functional_correctness"
+    ],
+    'category_config': {
+        "default_sample_limit": 50,
+        "timeout_per_sample": 120,  # Longer for complex coding tasks
+        "max_tokens": 4096,         # More tokens for complex code
+        "temperature": 0.1,
+        "top_p": 0.9,
+        "stop_sequences": ["```", "def ", "class ", "\n\n\n"],
+        "enable_repository_context": True,
+        "enable_multifile_analysis": True,
+        "save_generated_code": True,
+        "require_compilation_check": True
+    },
+    'priority': "HIGH",
+    'phase': "1"
+}
+
+# ================================
+# ADVANCED MULTIMODAL CATEGORY (Updated)
+# ================================
+
+# ================================
+# MIXTURE OF EXPERTS CATEGORY (Updated)
 # ================================
 
 MIXTURE_OF_EXPERTS = {
     'models': [
-        'mixtral_8x7b'  # First MoE model in our registry
+        'mixtral_8x7b',         # Existing: Mixtral 8x7B
+        'mixtral_8x22b',        # New: Mixtral 8x22B (from ChatGPT recommendations)
+        'dbrx_instruct',        # New: DBRX 132B Instruct
+        'deepseek_v3'           # New: DeepSeek-V3 ultra-efficient MoE
     ],
     'primary_datasets': [
         "mmlu",
-        "hellaswag",
+        "hellaswag", 
         "arc_challenge",
-        "humaneval"
+        "humaneval",
+        "bigbench_hard"         # Added for advanced MoE evaluation
     ],
     'optional_datasets': [
         "gsm8k",
         "mt_bench",
         "truthfulness_fixed",
-        "code_contests",       # NEW: Test MoE performance on competitive programming
-        "math_competition"     # NEW: Test MoE performance on advanced math
+        "code_contests",
+        "math_competition",
+        "enterprise_tasks",     # Added for enterprise MoE models
+        "longbench"            # Added for long-context MoE evaluation
     ],
     'evaluation_metrics': [
         "efficiency_per_active_param",
         "inference_speed",
-        "multiple_choice_accuracy",
+        "multiple_choice_accuracy", 
         "reasoning_consistency",
-        "multilingual_capability"
+        "multilingual_capability",
+        "expert_utilization_efficiency",  # New: MoE-specific metric
+        "memory_vs_quality_ratio"        # New: MoE efficiency metric
     ],
     'category_config': {
-        "default_sample_limit": 40,
-        "timeout_per_sample": 40,
-        "max_tokens": 1024,
-        "temperature": 0.2,
+        "default_sample_limit": 20,  # Increased for better MoE evaluation
+        "timeout_per_sample": 60,
+        "max_tokens": 2048,          # Increased for complex MoE tasks
+        "temperature": 0.1,          # Lower for consistency
         "top_p": 0.9,
         "stop_sequences": ["Question:", "Answer:", "\n\n"],
         "enable_expert_utilization_tracking": True,
         "enable_efficiency_metrics": True,
-        "save_expert_activation_patterns": False,  # Would require model internals
-        "optimize_for_throughput": True
+        "save_expert_activation_patterns": False,
+        "optimize_for_throughput": True,
+        "enable_moe_analysis": True,          # New: MoE-specific analysis
+        "track_active_parameters": True       # New: Track active vs total params
+    },
+    'priority': "HIGHEST",  # Upgraded priority
+    'phase': "1"           # Priority implementation
+}
+
+
+# ================================
+# ADVANCED MULTIMODAL CATEGORY 
+# ================================
+
+ADVANCED_MULTIMODAL = {
+    'models': [
+        'llama32_vision_90b',       # Existing Llama 3.2 Vision 90B
+        'internvl2_llama3_76b',     # New: InternVL2-Llama3-76B
+        'qwen25_vl_7b',             # Existing Qwen2.5-VL 7B
+        'qwen2_vl_7b',              # Existing Qwen2-VL 7B
+        'minicpm_v_26',             # Existing MiniCPM-V 2.6
+        'internvl2_8b'              # Existing InternVL2 8B
+    ],
+    'primary_datasets': [
+        "mmmu",                     # Massive multimodal understanding
+        "mathvista",                # Mathematical visual reasoning
+        "docvqa",                   # Document visual QA
+        "ai2d",                     # Diagram understanding
+        "scienceqa"                 # Science visual QA
+    ],
+    'optional_datasets': [
+        "chartqa",                  # Chart understanding
+        "textvqa",                  # Text visual QA
+        "multimodal_sample"         # Sample multimodal tasks
+    ],
+    'evaluation_metrics': [
+        "advanced_visual_reasoning_score",
+        "multimodal_academic_accuracy",
+        "mathematical_visual_accuracy",
+        "document_understanding_score",
+        "chart_analysis_accuracy",
+        "vision_language_coherence"
+    ],
+    'category_config': {
+        "default_sample_limit": 15,  # Smaller batches for multimodal
+        "timeout_per_sample": 120,  # Longer for visual processing
+        "max_tokens": 2048,
+        "temperature": 0.1,
+        "top_p": 0.9,
+        "stop_sequences": ["Question:", "Answer:", "\n\n"],
+        "enable_vision_processing": True,
+        "enable_chart_analysis": True,
+        "enable_document_understanding": True,
+        "require_visual_attention": True,
+        "multimodal_fusion": True
     },
     'priority': "HIGH",
-    'phase': "2"
+    'phase': "1"
 }
 
 
@@ -554,11 +724,14 @@ TEXT_GEOSPATIAL = {
 
 
 # ================================
-# CATEGORY REGISTRY
+# CATEGORY REGISTRY (Updated)
 # ================================
 
-# Registry of all available categories (will expand as we add more)
+# Registry of all available categories (expanded with H100-optimized models)
 CATEGORY_REGISTRY = {
+    "h100_optimized_large": H100_OPTIMIZED_LARGE,           # New: H100-optimized large models
+    "advanced_code_generation": ADVANCED_CODE_GENERATION,   # Updated: Advanced coding models
+    "advanced_multimodal": ADVANCED_MULTIMODAL,             # Updated: Advanced multimodal models
     "coding_specialists": CODING_SPECIALISTS,
     "mathematical_reasoning": MATHEMATICAL_REASONING,
     "biomedical_specialists": BIOMEDICAL_SPECIALISTS,
@@ -567,13 +740,16 @@ CATEGORY_REGISTRY = {
     "efficiency_optimized": EFFICIENCY_OPTIMIZED,
     "general_purpose": GENERAL_PURPOSE,
     "safety_alignment": SAFETY_ALIGNMENT,
-    "mixture_of_experts": MIXTURE_OF_EXPERTS,      # Added: New MoE category
-    "reasoning_specialized": REASONING_SPECIALIZED, # Added: New reasoning category
+    "mixture_of_experts": MIXTURE_OF_EXPERTS,      # Updated to include new MoE models
+    "reasoning_specialized": REASONING_SPECIALIZED,
     "text_geospatial": TEXT_GEOSPATIAL
 }
 
-# Alias for compatibility with different import patterns
+# Alias for compatibility with different import patterns (updated)
 MODEL_CATEGORIES = {
+    "H100_OPTIMIZED_LARGE": H100_OPTIMIZED_LARGE['models'],           # New category
+    "ADVANCED_CODE_GENERATION": ADVANCED_CODE_GENERATION['models'],   # Updated category
+    "ADVANCED_MULTIMODAL": ADVANCED_MULTIMODAL['models'],             # Updated category
     "CODING_SPECIALISTS": CODING_SPECIALISTS['models'],
     "MATHEMATICAL_REASONING": MATHEMATICAL_REASONING['models'],
     "BIOMEDICAL_SPECIALISTS": BIOMEDICAL_SPECIALISTS['models'],
@@ -582,8 +758,9 @@ MODEL_CATEGORIES = {
     "EFFICIENCY_OPTIMIZED": EFFICIENCY_OPTIMIZED['models'],
     "GENERAL_PURPOSE": GENERAL_PURPOSE['models'],
     "SAFETY_ALIGNMENT": SAFETY_ALIGNMENT['models'],
-    "MIXTURE_OF_EXPERTS": MIXTURE_OF_EXPERTS['models'],        # Added
-    "REASONING_SPECIALIZED": REASONING_SPECIALIZED['models']   # Added
+    "MIXTURE_OF_EXPERTS": MIXTURE_OF_EXPERTS['models'],
+    "REASONING_SPECIALIZED": REASONING_SPECIALIZED['models'],
+    "TEXT_GEOSPATIAL": TEXT_GEOSPATIAL['models']
 }
 
 

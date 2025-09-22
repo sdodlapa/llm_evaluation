@@ -973,7 +973,184 @@ MODEL_CONFIGS = {
         evaluation_batch_size=4
     ),
 
-    # September 2025 Latest Qwen Models
+    # ================================
+    # H100-OPTIMIZED LARGE MODELS (70B+)
+    # ================================
+    
+    # ChatGPT Recommended: H100-Optimized General Purpose
+    "qwen25_72b": ModelConfig(
+        model_name="Qwen2.5 72B Instruct",
+        huggingface_id="Qwen/Qwen2.5-72B-Instruct",
+        license="Apache 2.0",
+        size_gb=144.0,  # ~72B parameters
+        context_window=131072,  # 131K context window
+        preset="performance",
+        specialization_category="general",
+        specialization_subcategory="large_language_model",
+        primary_use_cases=["complex_reasoning", "multilingual", "long_context"],
+        quantization_method="none",
+        max_model_len=32768,
+        gpu_memory_utilization=0.95,
+        tensor_parallel_size=8,  # H100-optimized: Use all 8 GPUs
+        priority="HIGHEST",
+        agent_optimized=True,
+        agent_temperature=0.1,
+        max_function_calls_per_turn=10,
+        evaluation_batch_size=1  # Small batch for 72B model
+    ),
+    
+    "llama31_70b_fp8": ModelConfig(
+        model_name="Llama 3.1 70B Instruct FP8",
+        huggingface_id="nvidia/Llama-3.1-70B-Instruct-FP8",  # H100-optimized FP8
+        license="Llama 3.1 Community License",
+        size_gb=70.0,  # FP8 reduces memory footprint
+        context_window=131072,  # 128K context window
+        preset="performance",
+        specialization_category="general",
+        specialization_subcategory="h100_optimized",
+        primary_use_cases=["general_reasoning", "efficient_inference", "h100_optimization"],
+        quantization_method="fp8",  # Native FP8 for H100
+        max_model_len=32768,
+        gpu_memory_utilization=0.90,
+        tensor_parallel_size=8,  # Use all 8 H100s for maximum throughput
+        priority="HIGHEST",
+        agent_optimized=True,
+        agent_temperature=0.1,
+        max_function_calls_per_turn=8,
+        evaluation_batch_size=2  # FP8 allows larger batches
+    ),
+    
+    # ChatGPT Recommended: Advanced MoE Models
+    "mixtral_8x22b": ModelConfig(
+        model_name="Mixtral 8x22B Instruct",
+        huggingface_id="mistralai/Mixtral-8x22B-Instruct-v0.1",
+        license="Apache 2.0",
+        size_gb=176.0,  # 8x22B total parameters
+        context_window=65536,  # 64K context window
+        preset="performance",
+        specialization_category="mixture_of_experts",
+        specialization_subcategory="advanced_moe",
+        primary_use_cases=["efficient_inference", "multilingual", "reasoning"],
+        quantization_method="none",
+        max_model_len=32768,
+        gpu_memory_utilization=0.90,
+        tensor_parallel_size=8,  # MoE benefits from full tensor parallelism
+        priority="HIGHEST",
+        agent_optimized=True,
+        agent_temperature=0.1,
+        max_function_calls_per_turn=8,
+        evaluation_batch_size=2  # ~44B active params allows reasonable batching
+    ),
+    
+    "dbrx_instruct": ModelConfig(
+        model_name="DBRX Instruct",
+        huggingface_id="databricks/dbrx-instruct",
+        license="Databricks Open Model License",
+        size_gb=264.0,  # 132B total parameters
+        context_window=32768,  # 32K context window
+        preset="performance",
+        specialization_category="mixture_of_experts",
+        specialization_subcategory="enterprise_moe",
+        primary_use_cases=["enterprise_applications", "reasoning", "code_generation"],
+        quantization_method="none",
+        max_model_len=32768,
+        gpu_memory_utilization=0.95,
+        tensor_parallel_size=8,  # Requires all 8 H100s
+        priority="HIGH",
+        agent_optimized=True,
+        agent_temperature=0.1,
+        max_function_calls_per_turn=8,
+        evaluation_batch_size=1  # Large MoE model, small batches
+    ),
+    
+    "deepseek_v3": ModelConfig(
+        model_name="DeepSeek-V3",
+        huggingface_id="deepseek-ai/DeepSeek-V3",
+        license="DeepSeek License",
+        size_gb=671.0,  # 671B total / 37B active
+        context_window=128000,  # 128K context window
+        preset="performance",
+        specialization_category="mixture_of_experts",
+        specialization_subcategory="ultra_efficient_moe",
+        primary_use_cases=["reasoning", "mathematics", "code_generation"],
+        quantization_method="none",
+        max_model_len=32768,
+        gpu_memory_utilization=0.95,
+        tensor_parallel_size=8,  # MLA + sparse MoE allows serving on 8×H100
+        priority="HIGH",
+        agent_optimized=True,
+        agent_temperature=0.1,
+        max_function_calls_per_turn=8,
+        evaluation_batch_size=1  # Ultra-large model
+    ),
+    
+    # ChatGPT Recommended: Apache 2.0 Alternative
+    "xverse_65b": ModelConfig(
+        model_name="XVERSE-65B Chat",
+        huggingface_id="xverse/XVERSE-65B-Chat",
+        license="Apache 2.0",
+        size_gb=130.0,  # ~65B parameters
+        context_window=32768,  # 32K context window
+        preset="balanced",
+        specialization_category="general",
+        specialization_subcategory="multilingual_chat",
+        primary_use_cases=["multilingual", "general_reasoning", "open_license"],
+        quantization_method="none",
+        max_model_len=32768,
+        gpu_memory_utilization=0.90,
+        tensor_parallel_size=8,  # Use full H100 cluster
+        priority="MEDIUM",
+        agent_optimized=True,
+        agent_temperature=0.2,
+        max_function_calls_per_turn=6,
+        evaluation_batch_size=1
+    ),
+    
+    # ChatGPT Recommended: Advanced Code Specialist
+    "granite_34b_code": ModelConfig(
+        model_name="Granite 34B Code Instruct",
+        huggingface_id="ibm-granite/granite-34b-code-instruct-8k",
+        license="Apache 2.0",
+        size_gb=68.0,  # ~34B parameters
+        context_window=8192,  # 8K context window
+        preset="balanced",
+        specialization_category="code_generation",
+        specialization_subcategory="enterprise_coding",
+        primary_use_cases=["repository_level_coding", "code_fixing", "enterprise_development"],
+        quantization_method="none",
+        max_model_len=8192,
+        gpu_memory_utilization=0.85,
+        tensor_parallel_size=4,  # 34B can use 4 GPUs efficiently
+        priority="HIGH",
+        agent_optimized=True,
+        agent_temperature=0.1,
+        max_function_calls_per_turn=6,
+        evaluation_batch_size=4
+    ),
+    
+    # ChatGPT Recommended: Advanced Multimodal
+    "internvl2_llama3_76b": ModelConfig(
+        model_name="InternVL2-Llama3-76B",
+        huggingface_id="OpenGVLab/InternVL2-Llama3-76B",
+        license="MIT",
+        size_gb=152.0,  # ~76B parameters
+        context_window=8192,  # 8K context window
+        preset="performance",
+        specialization_category="multimodal",
+        specialization_subcategory="competitive_vlm",
+        primary_use_cases=["advanced_visual_reasoning", "document_understanding", "chart_analysis"],
+        quantization_method="none",
+        max_model_len=8192,
+        gpu_memory_utilization=0.90,
+        tensor_parallel_size=8,  # Large multimodal model
+        priority="HIGH",
+        agent_optimized=True,
+        agent_temperature=0.1,
+        max_function_calls_per_turn=5,
+        evaluation_batch_size=1  # Multimodal models are memory-intensive
+    ),
+
+    # September 2025 Latest Qwen Models (keeping existing)
     "qwen3_next_80b": ModelConfig(
         model_name="Qwen3-Next 80B-A3B Instruct",
         huggingface_id="Qwen/Qwen3-Next-80B-A3B-Instruct",
