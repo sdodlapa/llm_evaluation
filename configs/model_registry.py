@@ -971,6 +971,69 @@ MODEL_CONFIGS = {
         agent_temperature=0.1,  # Lower for precise analysis
         max_function_calls_per_turn=5,
         evaluation_batch_size=4
+    ),
+
+    # September 2025 Latest Qwen Models
+    "qwen3_next_80b": ModelConfig(
+        model_name="Qwen3-Next 80B-A3B Instruct",
+        huggingface_id="Qwen/Qwen3-Next-80B-A3B-Instruct",
+        license="Apache 2.0",
+        size_gb=80.0,  # 80B total parameters, 3B activated
+        context_window=262144,  # 262K context window
+        preset="performance",
+        specialization_category="code_generation",
+        specialization_subcategory="advanced_reasoning",
+        primary_use_cases=["coding", "agent_development", "complex_reasoning"],
+        quantization_method="none",
+        max_model_len=32768,  # Conservative for agents
+        gpu_memory_utilization=0.90,
+        tensor_parallel_size=4,  # CRITICAL: Use 4 GPUs for tensor parallelism
+        priority="HIGHEST",  # Flagship September 2025 model
+        agent_optimized=True,
+        agent_temperature=0.1,
+        max_function_calls_per_turn=10,  # Higher for complex tasks
+        evaluation_batch_size=2  # Lower for large model
+    ),
+
+    "qwen3_30b_2507": ModelConfig(
+        model_name="Qwen3 30B-A3B Instruct 2507",
+        huggingface_id="Qwen/Qwen3-30B-A3B-Instruct-2507",
+        license="Apache 2.0", 
+        size_gb=30.5,
+        context_window=262144,  # 262K context window
+        preset="performance",
+        specialization_category="code_generation",
+        specialization_subcategory="advanced_coding",
+        primary_use_cases=["coding", "agent_development", "mathematical_reasoning"],
+        quantization_method="none",
+        max_model_len=32768,
+        gpu_memory_utilization=0.85,
+        tensor_parallel_size=2,  # Use 2 GPUs for optimal performance
+        priority="HIGHEST",  # September 2025 model
+        agent_optimized=True,
+        agent_temperature=0.1,
+        max_function_calls_per_turn=8,
+        evaluation_batch_size=4
+    ),
+
+    "qwen3_4b_2507": ModelConfig(
+        model_name="Qwen3 4B Instruct 2507",
+        huggingface_id="Qwen/Qwen3-4B-Instruct-2507",
+        license="Apache 2.0",
+        size_gb=4.0,
+        context_window=128000,  # 128K context window
+        preset="balanced",
+        specialization_category="code_generation", 
+        specialization_subcategory="efficient_coding",
+        primary_use_cases=["coding", "agent_development", "efficiency"],
+        quantization_method="none",
+        max_model_len=32768,
+        gpu_memory_utilization=0.80,
+        priority="HIGH",  # September 2025 compact model
+        agent_optimized=True,
+        agent_temperature=0.1,
+        max_function_calls_per_turn=6,
+        evaluation_batch_size=8
     )
 }
 

@@ -293,6 +293,68 @@ QWEN_MODEL_CONFIGS = {
         agent_temperature=0.1,
         max_function_calls_per_turn=10,
         evaluation_batch_size=8
+    ),
+    
+    # ==================== SEPTEMBER 2025 LATEST QWEN MODELS ====================
+    
+    # Qwen3-Next-80B-A3B-Instruct - Latest Next-gen efficiency model (September 2025)
+    "qwen3_next_80b": ModelConfig(
+        model_name="Qwen3-Next 80B-A3B Instruct",
+        huggingface_id="Qwen/Qwen3-Next-80B-A3B-Instruct",
+        license="Apache 2.0",
+        size_gb=80.0,  # 80B total parameters, 3B activated
+        context_window=262144,  # Native 256K context window
+        preset="performance",
+        quantization_method="none",  # New architecture, keep unquantized for testing
+        max_model_len=262144,  # Full 256K context support
+        gpu_memory_utilization=0.85,
+        priority="HIGHEST",  # Latest cutting-edge model
+        agent_optimized=True,
+        agent_temperature=0.1,
+        max_function_calls_per_turn=10,  # Advanced agentic capabilities
+        evaluation_batch_size=4,  # Conservative for large model
+        benchmark_iterations=3,
+        tensor_parallel_size=4  # Requires 4 GPUs (fits 8 GPU constraint)
+    ),
+    
+    # Qwen3-30B-A3B-Instruct-2507 - Latest 30B with enhanced capabilities (September 2025)
+    "qwen3_30b_2507": ModelConfig(
+        model_name="Qwen3 30B-A3B Instruct 2507",
+        huggingface_id="Qwen/Qwen3-30B-A3B-Instruct-2507", 
+        license="Apache 2.0",
+        size_gb=30.5,  # 30.5B total, 3.3B activated
+        context_window=262144,  # Native 256K, extensible to 1M
+        preset="performance",
+        quantization_method="none",  # Latest MoE architecture
+        max_model_len=262144,  # Can extend to 1M with special config
+        gpu_memory_utilization=0.85,
+        priority="HIGHEST",  # Latest enhanced version
+        agent_optimized=True,
+        agent_temperature=0.1,
+        max_function_calls_per_turn=8,
+        evaluation_batch_size=6,
+        benchmark_iterations=3,
+        tensor_parallel_size=2  # Can run on 2-4 GPUs
+    ),
+    
+    # Qwen3-4B-Instruct-2507 - Smaller latest model for efficiency testing
+    "qwen3_4b_2507": ModelConfig(
+        model_name="Qwen3 4B Instruct 2507",
+        huggingface_id="Qwen/Qwen3-4B-Instruct-2507",
+        license="Apache 2.0", 
+        size_gb=4.0,
+        context_window=128000,
+        preset="performance",
+        quantization_method="none",
+        max_model_len=128000,
+        gpu_memory_utilization=0.90,
+        priority="HIGH",  # Smaller but latest
+        agent_optimized=True,
+        agent_temperature=0.1,
+        max_function_calls_per_turn=6,
+        evaluation_batch_size=12,
+        benchmark_iterations=5,
+        tensor_parallel_size=1  # Single GPU sufficient
     )
 }
 
