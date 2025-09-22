@@ -189,3 +189,19 @@ slurm-*.err
 # GPU monitoring
 nvidia-smi.log
 gpu_usage.log
+
+# Evaluation caches and results
+vllm_evaluation_cache/
+vllm_native_cache/
+model_cache/
+test_cache/
+comprehensive_logs/
+comprehensive_results/
+category_evaluation_results/
+distributed_test_results/
+test_geospatial_results/
+
+# Temporary evaluation files
+*.log
+distributed_validation_local.*
+optimal_presets_config.json

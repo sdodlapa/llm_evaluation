@@ -3,8 +3,8 @@
 #SBATCH --partition=h100quadflex
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=20
-#SBATCH --gres=gpu:H100:4  # 4 H100 GPUs for comprehensive testing
+#SBATCH --cpus-per-task=16
+#SBATCH --gpus=4 # 4 H100 GPUs for comprehensive testing
 #SBATCH --mem=300G
 #SBATCH --time=12:00:00
 #SBATCH --output=slurm_jobs/logs/new_models_comprehensive_%j.out
