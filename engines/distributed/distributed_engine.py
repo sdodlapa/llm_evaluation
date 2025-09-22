@@ -182,7 +182,7 @@ class DistributedEvaluationEngine(EvaluationEngine):
         
         # Check if model is large enough to require distributed processing
         estimated_size = self._estimate_model_size(model_config)
-        if estimated_size < 15.0:  # Less than 15GB - use lightweight engine
+        if estimated_size < 50.0:  # Less than 50GB - use lightweight engine (simplified single threshold)
             logger.debug(f"Model {model_config.model_name} ({estimated_size:.1f}GB) better suited for lightweight engine")
             return False
         

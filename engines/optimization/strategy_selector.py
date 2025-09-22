@@ -40,7 +40,7 @@ class StrategySelector:
         }
         
         # Strategy selection thresholds (can be tuned based on experience)
-        self.lightweight_max_size_gb = 7.0  # Models <= 7GB use lightweight
+        self.lightweight_max_size_gb = 50.0  # Models <= 50GB use lightweight (simplified single threshold)
         self.distributed_min_gpus = 2       # Need >= 2 GPUs for distributed
         self.memory_safety_factor = 1.2     # 20% memory safety margin
         

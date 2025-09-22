@@ -63,7 +63,7 @@ class DistributedOptimizations:
 @dataclass
 class EngineSelectionCriteria:
     """Criteria for automatic engine selection"""
-    model_size_threshold_gb: float = 30.0
+    model_size_threshold_gb: float = 50.0  # Updated: Simplified single threshold for clean engine selection
     memory_utilization_threshold: float = 0.9
     prefer_speed: bool = True
     prefer_memory_efficiency: bool = False

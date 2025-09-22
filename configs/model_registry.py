@@ -1034,6 +1034,157 @@ MODEL_CONFIGS = {
         agent_temperature=0.1,
         max_function_calls_per_turn=6,
         evaluation_batch_size=8
+    ),
+
+    # ================================
+    # MISSING MODELS - ADDED
+    # ================================
+
+    "llama31_70b": ModelConfig(
+        model_name="Llama 3.1 70B Instruct",
+        huggingface_id="meta-llama/Meta-Llama-3.1-70B-Instruct",
+        license="Llama 3.1 Community License",
+        size_gb=140.0,  # ~70B parameters
+        context_window=131072,  # 128K context window
+        preset="performance",
+        specialization_category="general",
+        specialization_subcategory="large_language_model",
+        primary_use_cases=["general_reasoning", "complex_tasks", "agent_development"],
+        quantization_method="none",
+        max_model_len=32768,
+        gpu_memory_utilization=0.90,
+        tensor_parallel_size=4,  # Use 4 GPUs for 70B model
+        priority="HIGH",
+        agent_optimized=True,
+        agent_temperature=0.1,
+        max_function_calls_per_turn=8,
+        evaluation_batch_size=2
+    ),
+
+    "mixtral_8x7b": ModelConfig(
+        model_name="Mixtral 8x7B Instruct v0.1",
+        huggingface_id="mistralai/Mixtral-8x7B-Instruct-v0.1",
+        license="Apache 2.0",
+        size_gb=93.0,  # ~46.7B total parameters (8x7B experts)
+        context_window=32768,  # 32K context window
+        preset="performance",
+        specialization_category="general",
+        specialization_subcategory="mixture_of_experts",
+        primary_use_cases=["general_reasoning", "efficient_inference", "multilingual"],
+        quantization_method="none",
+        max_model_len=32768,
+        gpu_memory_utilization=0.85,
+        tensor_parallel_size=4,  # MoE benefits from tensor parallelism
+        priority="HIGH",
+        agent_optimized=True,
+        agent_temperature=0.1,
+        max_function_calls_per_turn=6,
+        evaluation_batch_size=4
+    ),
+
+    "deepseek_r1_distill_llama_70b": ModelConfig(
+        model_name="DeepSeek-R1-Distill-Llama-70B",
+        huggingface_id="deepseek-ai/DeepSeek-R1-Distill-Llama-70B",
+        license="MIT",
+        size_gb=140.0,  # ~70B parameters
+        context_window=131072,  # 128K context window
+        preset="performance",
+        specialization_category="reasoning",
+        specialization_subcategory="reasoning_distilled",
+        primary_use_cases=["complex_reasoning", "mathematical_reasoning", "logical_thinking"],
+        quantization_method="none",
+        max_model_len=32768,
+        gpu_memory_utilization=0.90,
+        tensor_parallel_size=4,  # Use 4 GPUs for 70B model
+        priority="HIGH",
+        agent_optimized=True,
+        agent_temperature=0.1,
+        max_function_calls_per_turn=8,
+        evaluation_batch_size=2
+    ),
+
+    "starcoder2_15b": ModelConfig(
+        model_name="StarCoder2 15B",
+        huggingface_id="bigcode/starcoder2-15b",
+        license="BigCode OpenRAIL-M",
+        size_gb=32.0,  # ~15B parameters
+        context_window=16384,  # 16K context window with sliding window
+        preset="balanced",
+        specialization_category="code_generation",
+        specialization_subcategory="advanced_coding",
+        primary_use_cases=["code_generation", "fill_in_middle", "code_completion"],
+        quantization_method="none",
+        max_model_len=16384,
+        gpu_memory_utilization=0.85,
+        tensor_parallel_size=2,  # Use 2 GPUs for efficiency
+        priority="HIGH",
+        agent_optimized=True,
+        agent_temperature=0.1,
+        max_function_calls_per_turn=6,
+        evaluation_batch_size=6
+    ),
+
+    "gemma2_27b": ModelConfig(
+        model_name="Gemma 2 27B",
+        huggingface_id="google/gemma-2-27b",
+        license="Gemma Terms of Use",
+        size_gb=54.0,  # ~27B parameters
+        context_window=8192,  # 8K context window
+        preset="balanced",
+        specialization_category="general",
+        specialization_subcategory="instruction_following",
+        primary_use_cases=["general_reasoning", "instruction_following", "text_generation"],
+        quantization_method="none",
+        max_model_len=8192,
+        gpu_memory_utilization=0.85,
+        tensor_parallel_size=2,  # Use 2 GPUs
+        priority="HIGH",
+        agent_optimized=True,
+        agent_temperature=0.2,
+        max_function_calls_per_turn=6,
+        evaluation_batch_size=4
+    ),
+
+    "internlm2_20b": ModelConfig(
+        model_name="InternLM2 20B Chat",
+        huggingface_id="internlm/internlm2-chat-20b",
+        license="Apache 2.0",
+        size_gb=40.0,  # ~20B parameters
+        context_window=32768,  # 32K context window
+        preset="balanced",
+        specialization_category="general",
+        specialization_subcategory="multilingual_chat",
+        primary_use_cases=["general_reasoning", "multilingual", "chat"],
+        quantization_method="none",
+        max_model_len=32768,
+        gpu_memory_utilization=0.85,
+        tensor_parallel_size=2,  # Use 2 GPUs
+        priority="MEDIUM",
+        agent_optimized=True,
+        agent_temperature=0.2,
+        max_function_calls_per_turn=6,
+        evaluation_batch_size=4
+    ),
+
+    "llama32_vision_90b": ModelConfig(
+        model_name="Llama 3.2 Vision 90B Instruct",
+        huggingface_id="meta-llama/Llama-3.2-90B-Vision-Instruct",
+        license="Llama 3.2 Community License",
+        size_gb=180.0,  # ~90B parameters
+        context_window=131072,  # 128K context window
+        preset="performance",
+        specialization_category="multimodal",
+        specialization_subcategory="vision_language_large",
+        primary_use_cases=["vision_language", "document_understanding", "complex_visual_reasoning"],
+        quantization_method="none",
+        max_model_len=32768,
+        gpu_memory_utilization=0.90,
+        tensor_parallel_size=4,  # Use all 4 GPUs for 90B vision model
+        priority="HIGH",
+        agent_optimized=True,
+        agent_temperature=0.1,
+        max_function_calls_per_turn=8,
+        evaluation_batch_size=1  # Very small batch for large vision model
     )
 }
 

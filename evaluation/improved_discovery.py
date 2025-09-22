@@ -238,10 +238,10 @@ class CategoryMappingManager:
         self.evaluation_data_dir = Path(evaluation_data_dir)
         self.discovery_engine = ImprovedDatasetDiscovery(evaluation_data_dir)
         
-        # Category definitions (moved from model_categories.py)
+        # Category definitions (updated to match model_categories.py)
         self._category_definitions = {
             "CODING_SPECIALISTS": {
-                "models": ["qwen3_8b", "qwen3_14b", "codestral_22b", "qwen3_coder_30b", "deepseek_coder_16b"],
+                "models": ["qwen3_8b", "qwen3_14b", "codestral_22b", "qwen3_coder_30b", "deepseek_coder_16b", "starcoder2_15b"],
                 "primary_datasets": ["humaneval", "mbpp", "bigcodebench"],
                 "category_dir": "coding"
             },
@@ -252,22 +252,22 @@ class CategoryMappingManager:
             },
             "BIOMEDICAL_SPECIALISTS": {
                 "models": ["biomistral_7b", "biomistral_7b_unquantized", "biomedlm_7b", "medalpaca_7b", "biogpt", 
-                          "medalpaca_13b", "clinical_camel_70b", "biogpt_large"],  # Removed BERT classification models
+                          "medalpaca_13b", "clinical_camel_70b", "biogpt_large"],
                 "primary_datasets": ["bioasq", "pubmedqa", "mediqa", "medqa"],
                 "category_dir": "biomedical",
-                "classification_models": ["bio_clinicalbert", "pubmedbert_large"]  # Separate classification models
+                "classification_models": ["bio_clinicalbert", "pubmedbert_large"]
             },
             "MULTIMODAL_PROCESSING": {
                 "models": ["qwen2_vl_7b", "donut_base", "layoutlmv3_base", "qwen25_vl_7b", "minicpm_v_26", 
-                          "llava_next_vicuna_7b", "internvl2_8b"],
+                          "llava_next_vicuna_7b", "internvl2_8b", "llama32_vision_90b"],
                 "primary_datasets": ["docvqa", "multimodal_sample", "ai2d", "scienceqa"],
                 "category_dir": "multimodal"
             },
             "SCIENTIFIC_RESEARCH": {
-                "models": ["longformer_large"],  # Removed BERT classification models for now - need generative alternatives
+                "models": ["longformer_large"],
                 "primary_datasets": ["scientific_papers", "scierc"],
                 "category_dir": "scientific",
-                "classification_models": ["scibert_base", "specter2_base"]  # Separate classification models
+                "classification_models": ["scibert_base", "specter2_base"]
             },
             "EFFICIENCY_OPTIMIZED": {
                 "models": ["qwen25_0_5b", "qwen25_3b", "phi35_mini"],
@@ -275,15 +275,26 @@ class CategoryMappingManager:
                 "category_dir": "efficiency"
             },
             "GENERAL_PURPOSE": {
-                "models": ["mistral_nemo_12b", "olmo2_13b", "yi_9b", "yi_1_5_34b", "gemma2_9b", "qwen25_3b"],  # Removed gated models llama31_8b, mistral_7b, added working qwen25_3b
+                "models": ["llama31_8b", "mistral_7b", "mistral_nemo_12b", "olmo2_13b", "yi_9b", "yi_1_5_34b", 
+                          "gemma2_9b", "llama31_70b", "gemma2_27b", "internlm2_20b"],
                 "primary_datasets": ["arc_challenge", "hellaswag", "mt_bench", "mmlu"],
                 "category_dir": "general"
             },
             "SAFETY_ALIGNMENT": {
-                "models": ["biomistral_7b", "qwen25_7b"],  # Removed BERT classification model, using generative models
-                "primary_datasets": ["truthfulqa", "ethics_benchmark"],
+                "models": ["safety_bert", "biomistral_7b", "qwen25_7b"],
+                "primary_datasets": ["truthfulness_fixed"],  # Fixed: using actual available dataset name
                 "category_dir": "safety",
-                "classification_models": ["safety_bert"]  # Separate classification models
+                "optional_datasets": ["toxicity_detection"]  # This is available
+            },
+            "MIXTURE_OF_EXPERTS": {
+                "models": ["mixtral_8x7b"],
+                "primary_datasets": ["mmlu", "hellaswag", "arc_challenge", "humaneval"],
+                "category_dir": "general"  # Most datasets (3/4) are in general, humaneval will be found via cross-search
+            },
+            "REASONING_SPECIALIZED": {
+                "models": ["deepseek_r1_distill_llama_70b"],
+                "primary_datasets": ["gsm8k", "enhanced_math_fixed", "arc_challenge", "mmlu"],
+                "category_dir": "reasoning"  # Math datasets are in reasoning, general datasets will be found via cross-search
             },
             "TEXT_GEOSPATIAL": {
                 "models": ["qwen25_7b", "qwen3_8b", "qwen3_14b", "mistral_nemo_12b"],
@@ -309,7 +320,46 @@ class CategoryMappingManager:
         required_datasets = category_info["primary_datasets"]
         category_dir = category_info["category_dir"]
         
+        # For these categories, always use cross-directory search since their datasets span multiple directories
+        if category_key in ["MIXTURE_OF_EXPERTS", "REASONING_SPECIALIZED"]:
+            return self._validate_cross_directory_category(category_key, required_datasets)
+        
+        # Special handling for other cross-directory categories
+        if category_dir == "cross_directory":
+            return self._validate_cross_directory_category(category_key, required_datasets)
+        
+        # Standard single-directory validation
         return self.discovery_engine.validate_category_readiness(category_dir, required_datasets)
+    
+    def _validate_cross_directory_category(self, category_key: str, required_datasets: List[str]) -> Dict[str, Any]:
+        """Handle categories where datasets span multiple directories"""
+        all_discovered = self.discovery_engine.discover_datasets()
+        available_datasets = []
+        missing_datasets = []
+        
+        # Search for each required dataset across all directories
+        for dataset_name in required_datasets:
+            found = False
+            for category_dir, datasets in all_discovered.items():
+                if dataset_name in datasets:
+                    available_datasets.append(dataset_name)
+                    found = True
+                    break
+            
+            if not found:
+                missing_datasets.append(dataset_name)
+        
+        is_ready = len(missing_datasets) == 0
+        
+        return {
+            "ready": is_ready,
+            "category": category_key.lower(),
+            "required_datasets": required_datasets,
+            "available_datasets": available_datasets,
+            "missing_datasets": missing_datasets,
+            "extra_datasets": [],  # Not applicable for cross-directory
+            "dataset_count": len(available_datasets)
+        }
     
     def get_category_datasets(self, category_name: str) -> List[str]:
         """Get datasets for a specific category"""
@@ -335,8 +385,8 @@ class CategoryMappingManager:
         required_datasets = category_info["primary_datasets"]
         category_dir = category_info["category_dir"]
         
-        # Get validation results
-        validation = self.discovery_engine.validate_category_readiness(category_dir, required_datasets)
+        # Get validation results using the manager's method (which handles cross-directory search)
+        validation = self.validate_category_readiness(category_name)
         
         # Convert to legacy format
         return {

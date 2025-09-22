@@ -4,10 +4,11 @@ A comprehensive, scalable framework for evaluating Large Language Models across 
 
 ## ✨ Key Features
 
-- **22+ Models**: Complete Qwen series + strategic alternatives (Llama, Phi, DeepSeek)
+- **61 Models**: Complete model coverage including Qwen, Llama 3.1/3.2, Mixtral MoE, StarCoder2, Gemma 2, and specialized models
+- **11 Categories**: Coding, mathematical reasoning, biomedical, multimodal, scientific research, efficiency, general purpose, safety, mixture of experts, reasoning specialized, geospatial
 - **26 Datasets**: Coding, mathematics, multimodal, genomics, efficiency, reasoning, QA, function calling, instruction following
 - **Real-time Monitoring**: GPU utilization, memory usage, throughput tracking
-- **Specialized Models**: Math, coding, genomics, efficiency-optimized variants
+- **Specialized Models**: Math, coding, genomics, efficiency-optimized variants, mixture of experts, reasoning-distilled models
 - **Clean Architecture**: Consolidated, maintainable, scalable structure
 - **Smart Recommendations**: Enhanced dataset selection system
 
@@ -88,21 +89,52 @@ llm_evaluation/
 │   ├── base_model.py          # Abstract base class
 │   └── qwen_implementation.py # Qwen-specific implementation
 ├── 📁 configs/                 # Configuration management
-│   └── model_configs.py       # Model definitions (22+ models)
+│   └── model_configs.py       # Model definitions (61 models)
 ├── 📁 evaluation_data/         # Dataset storage
 ├── 📁 results/                 # Evaluation outputs
 ├── 📁 docs/                    # Documentation
 └── 📁 archive/                 # Historical/redundant files
 ```
 
-# Multi-model comparison
-python evaluation/run_evaluation.py --models qwen3_8b,qwen3_14b --preset performance
+## 🤖 Model Coverage (61 Models)
 
-# Specific datasets
-python evaluation/run_evaluation.py --datasets humaneval,mbpp --sample-limit 50
+### 🆕 Recently Added Models (Sept 2025)
+| Model | Size | License | Category | Key Capabilities |
+|-------|------|---------|----------|------------------|
+| **Llama 3.1 70B** | 140GB | Llama 3.1 | General Purpose | Large-scale reasoning, 128K context |
+| **Mixtral 8x7B** | 93GB | Apache 2.0 | Mixture of Experts | Efficient inference, multilingual |
+| **DeepSeek-R1-Distill 70B** | 140GB | MIT | Reasoning Specialized | Advanced reasoning, distilled knowledge |
+| **StarCoder2 15B** | 32GB | BigCode | Coding Specialists | Repository-level code understanding |
+| **Gemma 2 27B** | 54GB | Gemma Terms | General Purpose | Instruction following, balanced performance |
+| **InternLM2 20B** | 40GB | Apache 2.0 | General Purpose | Multilingual chat, research-grade |
+| **Llama 3.2 Vision 90B** | 180GB | Llama 3.2 | Multimodal | Large-scale vision-language understanding |
+
+### 📋 Model Categories (11 Total)
+1. **Coding Specialists** (6 models): Advanced code generation and understanding
+2. **Mathematical Reasoning** (5 models): Specialized mathematical problem solving  
+3. **Biomedical Specialists** (10 models): Medical and biological domain expertise
+4. **Multimodal Processing** (8 models): Vision-language understanding
+5. **Scientific Research** (3 models): Academic and research applications
+6. **Efficiency Optimized** (3 models): Resource-constrained deployments
+7. **General Purpose** (10 models): Versatile language understanding
+8. **Safety Alignment** (3 models): Responsible AI and safety evaluation
+9. **🆕 Mixture of Experts** (1 model): Efficient sparse expert routing
+10. **🆕 Reasoning Specialized** (1 model): Advanced logical reasoning
+11. **Text Geospatial** (4 models): Location and spatial understanding
+
+### 🎯 Usage Examples
+```bash
+# Test new large models
+python category_evaluation.py --category general_purpose --samples 5 --preset balanced
+
+# Test mixture of experts
+python category_evaluation.py --category mixture_of_experts --dry-run
+
+# Test coding with StarCoder2
+python category_evaluation.py --model starcoder2_15b --dataset humaneval --samples 10
 ```
 
-## 📊 Supported Models
+## 📊 Legacy Model Support
 
 | Model | Size | Context | Optimization | Status |
 |-------|------|---------|--------------|--------|

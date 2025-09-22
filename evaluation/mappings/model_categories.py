@@ -45,7 +45,8 @@ CODING_SPECIALISTS = {
         'qwen3_14b',
         'codestral_22b',
         'qwen3_coder_30b',
-        'deepseek_coder_16b'
+        'deepseek_coder_16b',
+        'starcoder2_15b'  # Added: StarCoder2 15B
     ],
     'primary_datasets': [
         "humaneval",
@@ -56,7 +57,10 @@ CODING_SPECIALISTS = {
         "codecontests",
         "apps",
         "advanced_coding_sample",
-        "advanced_coding_extended"
+        "advanced_coding_extended",
+        "repobench",         # Added: For StarCoder2 evaluation
+        "repo_bench",        # NEW: Repository-level coding tasks (synthetic)
+        "code_contests"      # NEW: Real competitive programming (DeepMind)
     ],
     'evaluation_metrics': [
         "code_execution",
@@ -153,7 +157,8 @@ MATHEMATICAL_REASONING = {
         "enhanced_math_fixed"
     ],
     'optional_datasets': [
-        "advanced_math_sample"
+        "advanced_math_sample",
+        "math_competition"     # NEW: Competition-level mathematics problems
     ],
     'evaluation_metrics': [
         "mathematical_accuracy",
@@ -190,7 +195,8 @@ MULTIMODAL_PROCESSING = {
         'qwen25_vl_7b',
         'minicpm_v_26',
         'llava_next_vicuna_7b',
-        'internvl2_8b'
+        'internvl2_8b',
+        'llama32_vision_90b'  # Added: Llama 3.2 Vision 90B
     ],
     'primary_datasets': [
         "docvqa",
@@ -327,7 +333,10 @@ GENERAL_PURPOSE = {
         'olmo2_13b',
         'yi_9b',
         'yi_1_5_34b',
-        'gemma2_9b'
+        'gemma2_9b',
+        'llama31_70b',      # Added: Llama 3.1 70B 
+        'gemma2_27b',       # Added: Gemma 2 27B
+        'internlm2_20b'     # Added: InternLM2 20B
     ],
     'primary_datasets': [
         "arc_challenge",
@@ -336,7 +345,9 @@ GENERAL_PURPOSE = {
         "mmlu"
     ],
     'optional_datasets': [
-        "truthfulness_fixed"
+        "truthfulness_fixed",
+        "gsm8k",  # Added: For general mathematical reasoning
+        "humaneval"  # Added: For basic coding ability
     ],
     'evaluation_metrics': [
         "multiple_choice_accuracy",
@@ -405,7 +416,96 @@ SAFETY_ALIGNMENT = {
 
 
 # ================================
-# TEXT-BASED GEOSPATIAL PROCESSING
+# MIXTURE OF EXPERTS CATEGORY
+# ================================
+
+MIXTURE_OF_EXPERTS = {
+    'models': [
+        'mixtral_8x7b'  # First MoE model in our registry
+    ],
+    'primary_datasets': [
+        "mmlu",
+        "hellaswag",
+        "arc_challenge",
+        "humaneval"
+    ],
+    'optional_datasets': [
+        "gsm8k",
+        "mt_bench",
+        "truthfulness_fixed",
+        "code_contests",       # NEW: Test MoE performance on competitive programming
+        "math_competition"     # NEW: Test MoE performance on advanced math
+    ],
+    'evaluation_metrics': [
+        "efficiency_per_active_param",
+        "inference_speed",
+        "multiple_choice_accuracy",
+        "reasoning_consistency",
+        "multilingual_capability"
+    ],
+    'category_config': {
+        "default_sample_limit": 40,
+        "timeout_per_sample": 40,
+        "max_tokens": 1024,
+        "temperature": 0.2,
+        "top_p": 0.9,
+        "stop_sequences": ["Question:", "Answer:", "\n\n"],
+        "enable_expert_utilization_tracking": True,
+        "enable_efficiency_metrics": True,
+        "save_expert_activation_patterns": False,  # Would require model internals
+        "optimize_for_throughput": True
+    },
+    'priority': "HIGH",
+    'phase': "2"
+}
+
+
+# ================================
+# REASONING SPECIALIZED CATEGORY
+# ================================
+
+REASONING_SPECIALIZED = {
+    'models': [
+        'deepseek_r1_distill_llama_70b'  # First reasoning-distilled model
+    ],
+    'primary_datasets': [
+        "gsm8k",
+        "enhanced_math_fixed",
+        "arc_challenge",
+        "mmlu"
+    ],
+    'optional_datasets': [
+        "advanced_math_sample",
+        "logical_reasoning",
+        "scientific_reasoning",
+        "math_competition"     # NEW: Perfect fit for reasoning-specialized models
+    ],
+    'evaluation_metrics': [
+        "chain_of_thought_quality",
+        "reasoning_step_accuracy",
+        "logical_consistency",
+        "complex_problem_solving",
+        "mathematical_reasoning_score"
+    ],
+    'category_config': {
+        "default_sample_limit": 30,
+        "timeout_per_sample": 60,  # Longer timeout for complex reasoning
+        "max_tokens": 2048,        # More tokens for detailed reasoning
+        "temperature": 0.1,        # Very low temperature for consistent reasoning
+        "top_p": 0.9,
+        "stop_sequences": ["Problem:", "Solution:", "Answer:", "\n\n\n"],
+        "enable_reasoning_verification": True,
+        "enable_step_by_step_analysis": True,
+        "save_reasoning_chains": True,
+        "require_justification": True
+    },
+    'priority': "HIGH",
+    'phase': "2"
+}
+
+
+# ================================
+# TEXT GEOSPATIAL CATEGORY
 # ================================
 
 TEXT_GEOSPATIAL = {
@@ -465,6 +565,8 @@ CATEGORY_REGISTRY = {
     "efficiency_optimized": EFFICIENCY_OPTIMIZED,
     "general_purpose": GENERAL_PURPOSE,
     "safety_alignment": SAFETY_ALIGNMENT,
+    "mixture_of_experts": MIXTURE_OF_EXPERTS,      # Added: New MoE category
+    "reasoning_specialized": REASONING_SPECIALIZED, # Added: New reasoning category
     "text_geospatial": TEXT_GEOSPATIAL
 }
 
@@ -477,7 +579,9 @@ MODEL_CATEGORIES = {
     "SCIENTIFIC_RESEARCH": SCIENTIFIC_RESEARCH['models'],
     "EFFICIENCY_OPTIMIZED": EFFICIENCY_OPTIMIZED['models'],
     "GENERAL_PURPOSE": GENERAL_PURPOSE['models'],
-    "SAFETY_ALIGNMENT": SAFETY_ALIGNMENT['models']
+    "SAFETY_ALIGNMENT": SAFETY_ALIGNMENT['models'],
+    "MIXTURE_OF_EXPERTS": MIXTURE_OF_EXPERTS['models'],        # Added
+    "REASONING_SPECIALIZED": REASONING_SPECIALIZED['models']   # Added
 }
 
 
