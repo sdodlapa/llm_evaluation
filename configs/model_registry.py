@@ -1061,6 +1061,48 @@ MODEL_CONFIGS = {
         evaluation_batch_size=2
     ),
 
+    "llama33_70b": ModelConfig(
+        model_name="Llama 3.3 70B Instruct", 
+        huggingface_id="meta-llama/Llama-3.3-70B-Instruct",
+        license="Llama 3.3 Community License",
+        size_gb=140.0,  # ~70B parameters
+        context_window=131072,  # 128K context window  
+        preset="performance",
+        specialization_category="general",
+        specialization_subcategory="large_language_model",
+        primary_use_cases=["general_reasoning", "complex_tasks", "agent_development"],
+        quantization_method="none",
+        max_model_len=32768,
+        gpu_memory_utilization=0.90,
+        tensor_parallel_size=4,  # Use 4 GPUs for 70B model
+        priority="HIGH",
+        agent_optimized=True,
+        agent_temperature=0.1,
+        max_function_calls_per_turn=8,
+        evaluation_batch_size=2
+    ),
+
+    "llama31_8b": ModelConfig(
+        model_name="Llama 3.1 8B Instruct",
+        huggingface_id="meta-llama/Llama-3.1-8B-Instruct", 
+        license="Llama 3.1 Community License",
+        size_gb=16.0,  # ~8B parameters
+        context_window=131072,  # 128K context window
+        preset="balanced",
+        specialization_category="general", 
+        specialization_subcategory="medium_language_model",
+        primary_use_cases=["general_reasoning", "fast_inference", "agent_development"],
+        quantization_method="none",
+        max_model_len=32768,
+        gpu_memory_utilization=0.85,
+        tensor_parallel_size=1,  # Single GPU for 8B model
+        priority="MEDIUM",
+        agent_optimized=True,
+        agent_temperature=0.1,
+        max_function_calls_per_turn=6,
+        evaluation_batch_size=4
+    ),
+
     "mixtral_8x7b": ModelConfig(
         model_name="Mixtral 8x7B Instruct v0.1",
         huggingface_id="mistralai/Mixtral-8x7B-Instruct-v0.1",

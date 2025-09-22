@@ -335,6 +335,8 @@ GENERAL_PURPOSE = {
         'yi_1_5_34b',
         'gemma2_9b',
         'llama31_70b',      # Added: Llama 3.1 70B 
+        'llama33_70b',      # Added: Llama 3.3 70B (newer)
+        'llama31_8b',       # Added: Llama 3.1 8B (faster)
         'gemma2_27b',       # Added: Gemma 2 27B
         'internlm2_20b'     # Added: InternLM2 20B
     ],

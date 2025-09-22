@@ -114,6 +114,7 @@ MODEL_OVERRIDES = {
     
     # Models requiring authentication (try transformers)
     "llama31_8b": ModelBackendConfig(BackendType.TRANSFORMERS, "AutoModelForCausalLM"),
+    "llama33_70b": ModelBackendConfig(BackendType.TRANSFORMERS, "AutoModelForCausalLM"),
     "mistral_7b": ModelBackendConfig(BackendType.TRANSFORMERS, "AutoModelForCausalLM"),
     "gemma2_9b": ModelBackendConfig(BackendType.TRANSFORMERS, "AutoModelForCausalLM"),
 }
