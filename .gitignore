@@ -141,6 +141,7 @@ datasets/
 *.json
 *.jsonl
 *.parquet
+*.arrow
 *.feather
 
 # Evaluation results
